@@ -4,7 +4,8 @@ ITE score reports, rosters and MKSAP exports are education records about identif
 This software is designed so that it never needs to keep them.
 
 **What the app does with your files**
-- Files you upload are read into memory for your session only and discarded when the session ends.
+- Files you upload are read into memory for your session only and discarded when the session ends. The web
+  framework briefly writes each upload to a temporary file; the app deletes it immediately after reading it.
 - The app does not write uploads to disk, store them in a database, log their contents, or send them to any other service.
 - The app uses no analytics, tracking cookies, or third-party scripts that receive your data.
 - Downloads (reports, crosswalks) are generated in memory and sent only to you.

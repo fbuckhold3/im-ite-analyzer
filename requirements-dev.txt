@@ -2,3 +2,4 @@
 pytest>=8.0
 ruff==0.17.1
 pre-commit>=4.0
+rsconnect-python>=1.30   # only to (re)generate manifest.json

@@ -12,6 +12,8 @@ import io
 import numpy as np
 import pandas as pd
 
+from .limits import ISSUE_HINT, MAX_MKSAP_ROWS, UploadError, check_rows
+
 REQUIRED = ["Last Name", "First Name", "Subspecialty", "Answered?", "Correct?"]
 
 # Section codes seen in the 2026 export. TODO: confirm HP / IN / CS / FC labels with ACP.
@@ -38,14 +40,20 @@ VOLUME_BINS = [0, 100, 250, 500, 1000, np.inf]
 VOLUME_LABELS = ["Under 100", "100–249", "250–499", "500–999", "1,000+"]
 
 
-def load_mksap(source) -> pd.DataFrame:
+def load_mksap(source, name: str = "MKSAP file") -> pd.DataFrame:
     if isinstance(source, (bytes, bytearray)):
         source = io.BytesIO(source)
-    m = pd.read_csv(source, dtype=str)
+    try:
+        m = pd.read_csv(source, dtype=str, nrows=MAX_MKSAP_ROWS + 1)
+    except Exception as e:
+        raise UploadError(f"“{name}” could not be read as a CSV file.") from e
+    check_rows(name, len(m), MAX_MKSAP_ROWS)
     m.columns = [c.strip() for c in m.columns]
     missing = [c for c in REQUIRED if c not in m.columns]
     if missing:
-        raise ValueError(f"Not an MKSAP detail export — missing column(s): {', '.join(missing)}")
+        raise UploadError(
+            f"“{name}” is not an MKSAP Digital detail export — missing column(s): {', '.join(missing)}. {ISSUE_HINT}"
+        )
     m["Last Name"] = m["Last Name"].str.strip()
     m["First Name"] = m["First Name"].str.strip()
     m["ans"] = m["Answered?"].str.strip().str.upper().eq("Y")

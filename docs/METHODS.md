@@ -48,7 +48,8 @@ training, so a tier can worsen with an unchanged score. The app shows the percen
   lowercase, punctuation to spaces). A match needs the exact surname, or a shared surname token for compound
   names, **plus** agreement on first name (same initial or a known nickname). Several candidates are narrowed
   to an identical first name; otherwise the resident is left Ambiguous for the user to resolve. Matches are
-  graded Exact / Probable / Ambiguous / Unmatched, and every one can be reviewed and overridden.
+  graded Exact / Probable / Ambiguous / Unmatched (Manual once a user links an account by hand), and every one
+  can be reviewed and overridden.
 
 ## 4. Program analyses (`history.py`, `stats.py`)
 - **Graduating class** = exam year + 4 − PGY.

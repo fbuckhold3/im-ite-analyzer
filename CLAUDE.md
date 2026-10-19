@@ -18,22 +18,29 @@ Private, machine-local notes (if present): `CLAUDE.local.md`.
 - `tests/` pytest on synthetic fixtures only (`tests/conftest.py`). Run: `.venv/bin/python -m pytest`.
 - `scripts/validate_real_data.py <dir>` checks ite_core against a private real-data analysis (aggregates only).
 - `scripts/check_no_data.py` blocks data files / emails from commits (pre-commit + CI).
-- `modules/` (step 2+) one Shiny module per tab.
+- `app.py` page_navbar + footer; `modules/` one Shiny module per tab (`calculator`, `upload_align`) plus
+  `common.py` (badges, citation, footer) and `plots.py` (plotly builders, updated in place via shinywidgets).
+- `upload_server()` returns a reactive `session.Dataset` (rosters, mksap, crosswalk, wide) — later tabs read it.
+- `ite_core/session.py` assembles uploads (pure); `ite_core/limits.py` caps + `UploadError`; `ite_core/demo.py` invented data.
 
 ## Environment
 - Python 3.12 in `.venv/`. `requirements.txt` = runtime; `requirements-dev.txt` adds pytest, ruff, pre-commit.
 - Lint/format: `.venv/bin/ruff check . && .venv/bin/ruff format --check .` (config in pyproject.toml).
-- Deploy: Posit Connect Cloud. Needs `manifest.json` at repo root once `app.py` exists:
-  `rsconnect write-manifest shiny .`. **Gotcha:** manifest.json pins its own package versions —
-  regenerate it whenever requirements.txt changes.
+- Run: `.venv/bin/shiny run app.py --reload`.
+- Deploy: Posit Connect Cloud from GitHub. `requirements.txt` pins exact versions; regenerate `manifest.json`
+  with `scripts/write_manifest.sh` (explicit deploy file list — never run write-manifest on the repo root,
+  it would list local-only files). **Gotcha:** manifest.json carries its own copy of the package list.
 - PDFs read with `pypdf` (pure Python). Never shell out to `pdftotext` — not on the server.
   Avoid PyMuPDF (AGPL) — incompatible with this project's Apache-2.0 licensing.
 
 ## Rules (repo is PUBLIC)
 - Never commit real data, program names/numbers, or institution branding. Tests use invented names/IDs.
-- Uploaded data is processed in memory only; no server-side persistence, no analytics.
+- Uploaded data is processed in memory only; no server-side persistence, no analytics. Shiny writes uploads to a
+  temp file — read it and delete it immediately (`upload_align._take`). Raise `UploadError` (file names/counts
+  only) for anything a user can cause; `app.sanitize_errors = True` hides everything else.
 - Nomogram: cite McDonald et al. 2020 wherever predictions are shown, and describe it as an
   approximation of the published curves (see docs/METHODS.md).
-- Tier cutoffs are a setting (default High <50%, Intermediate 50–90%, Low ≥90%).
+- Tier cutoffs are a setting (default High <50%, Intermediate 50–90%, Low ≥90%). Display probabilities with
+  `common.fmt_prob` (rounds DOWN) so 89.8% never reads as "90%" next to an Intermediate badge.
 - `individual.ITE_TO_MKSAP` (ITE area → MKSAP section codes) is provisional, esp. GIM / Geriatrics.
 - Update CHANGELOG.md for user-visible changes; bump version in pyproject.toml + CITATION.cff on release.

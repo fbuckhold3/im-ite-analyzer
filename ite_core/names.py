@@ -17,7 +17,7 @@ import unicodedata
 
 import pandas as pd
 
-TIERS = ["Exact", "Probable", "Ambiguous", "Unmatched"]
+TIERS = ["Exact", "Probable", "Ambiguous", "Unmatched", "Manual"]  # Manual = linked by the user
 CROSSWALK_COLS = [
     "acp_id",
     "ite_name",
@@ -193,6 +193,8 @@ def set_match(crosswalk: pd.DataFrame, acp_id: str, mksap_key: str | None, mksap
         if len(other):
             raise ValueError(f"MKSAP account already linked to {cw.loc[other[0], 'ite_name']}")
         cw.loc[i, ["mksap_key", "mksap_last", "mksap_first"]] = [mksap_key, hit.mk_last.iloc[0], hit.mk_first.iloc[0]]
+        if cw.loc[i[0], "tier"] in ("Ambiguous", "Unmatched"):
+            cw.loc[i, "tier"] = "Manual"  # keep Exact/Probable if the user re-selected the proposed account
     cw.loc[i, "confirmed_by_user"] = True
     return cw
 
@@ -206,3 +208,10 @@ def read_crosswalk(source) -> pd.DataFrame:
     cw["confirmed_by_user"] = cw.confirmed_by_user.str.lower().eq("true")
     cw["n_candidates"] = pd.to_numeric(cw.n_candidates, errors="coerce")
     return cw[CROSSWALK_COLS].astype(object).where(cw[CROSSWALK_COLS].notna(), None)
+
+
+def confirm_tier(crosswalk: pd.DataFrame, tier: str) -> pd.DataFrame:
+    """Mark every proposal of one tier (e.g. 'Probable') as reviewed and accepted by the user."""
+    cw = crosswalk.copy()
+    cw.loc[(cw.tier == tier) & cw.mksap_key.notna(), "confirmed_by_user"] = True
+    return cw

@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "locale": "C.UTF-8",
+  "metadata": {
+    "appmode": "python-shiny",
+    "entrypoint": "app:app"
+  },
+  "python": {
+    "version": "3.12.15",
+    "package_manager": {
+      "name": "pip",
+      "version": "26.2.1",
+      "package_file": "requirements.txt"
+    }
+  },
+  "environment": {
+    "python": {
+      "requires": "~=3.12.0"
+    }
+  },
+  "files": {
+    "requirements.txt": {
+      "checksum": "57d8d7888b9a4ebf8474139a7d37a913"
+    },
+    ".python-version": {
+      "checksum": "61939823fbcc7e8de3b61ab105331baf"
+    },
+    "LICENSE": {
+      "checksum": "3b83ef96387f14655fc854ddc3c6bd57"
+    },
+    "NOTICE": {
+      "checksum": "316e5466344483b3ca9a37a55601af05"
+    },
+    "app.py": {
+      "checksum": "19ca02cbeea6900a5dbb10671b0d27bc"
+    },
+    "ite_core/__init__.py": {
+      "checksum": "83e584a570d0635ebdfff0bfc14b1b5d"
+    },
+    "ite_core/demo.py": {
+      "checksum": "d9b1204065469ed0f18a80cb32bd6513"
+    },
+    "ite_core/history.py": {
+      "checksum": "3b8661af63bb892d95fe970022626b5b"
+    },
+    "ite_core/individual.py": {
+      "checksum": "c6e26d4c768ee2d8d850f4fdcc3b9f79"
+    },
+    "ite_core/limits.py": {
+      "checksum": "79d46f5f9873d13041221842782a109b"
+    },
+    "ite_core/mksap.py": {
+      "checksum": "dafe74fd5716cf80b0c16456cfe9b37a"
+    },
+    "ite_core/names.py": {
+      "checksum": "6343739f135b2493a10a96c1f63a72a8"
+    },
+    "ite_core/nomogram.py": {
+      "checksum": "2987e2670b7c8ccd7a22f87698b52d1c"
+    },
+    "ite_core/pdf_reports.py": {
+      "checksum": "9ce00861690810fa624419f0d5e73645"
+    },
+    "ite_core/roster.py": {
+      "checksum": "044af7d1cc4e6180646d7f265acd7c66"
+    },
+    "ite_core/session.py": {
+      "checksum": "10efc93e933ebbde30970f96ef168482"
+    },
+    "ite_core/stats.py": {
+      "checksum": "72157c0fe785a68f512be77ef9f168d1"
+    },
+    "modules/__init__.py": {
+      "checksum": "3a6e24150172b26ddfd150f6f2637c96"
+    },
+    "modules/calculator.py": {
+      "checksum": "2502e5bcb45b8cff5d585104c62a4e15"
+    },
+    "modules/common.py": {
+      "checksum": "9def7a1cb873c6ac52722a3e05b1d3f8"
+    },
+    "modules/plots.py": {
+      "checksum": "7accd0678fb8839f555a836733e8dc8b"
+    },
+    "modules/upload_align.py": {
+      "checksum": "280d5635e6725ca0e3bc91da165e2f4e"
+    },
+    "www/app.css": {
+      "checksum": "0dc2a9581cd90a6f6e2c50556c2a7375"
+    }
+  }
+}

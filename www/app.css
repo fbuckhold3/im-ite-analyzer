@@ -1,0 +1,74 @@
+/* im-ite-analyzer — neutral, accessible styling. Tier colours are always paired with text. */
+:root {
+  --ink: #1f2328;
+  --ink-soft: #57606a;
+  --rule: #d8dee4;
+  --surface: #f6f8fa;
+  --high: #b3261e;
+  --high-bg: #fde7e5;
+  --mid: #8a5a00;
+  --mid-bg: #fff3d6;
+  --low: #0b6e4f;
+  --low-bg: #dcf3ea;
+  --bs-primary: #0b5cad;
+  --bs-link-color: #0b5cad;
+}
+
+body { color: var(--ink); }
+.navbar-brand { font-weight: 650; letter-spacing: 0.01em; }
+.card-header { font-weight: 600; }
+
+.hint { color: var(--ink-soft); font-size: 0.9rem; margin-bottom: 0.5rem; }
+.button-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.25rem 0 0.5rem; }
+
+.result-card { margin-bottom: 0.5rem; }
+.big-number { font-size: 2.6rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+
+.tier, .chip {
+  display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px;
+  font-size: 0.85rem; font-weight: 600; border: 1px solid transparent; white-space: nowrap;
+}
+.tier-high { color: var(--high); background: var(--high-bg); border-color: var(--high); }
+.tier-intermediate { color: var(--mid); background: var(--mid-bg); border-color: var(--mid); }
+.tier-low { color: var(--low); background: var(--low-bg); border-color: var(--low); }
+.tier-none { color: var(--ink-soft); }
+
+.chip-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0.25rem 0 0.75rem; }
+.chip { background: var(--surface); border-color: var(--rule); color: var(--ink); font-weight: 500; }
+.chip-exact { background: var(--low-bg); border-color: var(--low); }
+.chip-probable { background: var(--mid-bg); border-color: var(--mid); }
+.chip-manual { background: #e7f0fb; border-color: var(--bs-primary); }
+.chip-ambiguous, .chip-unmatched { background: var(--high-bg); border-color: var(--high); }
+
+.msg { padding: 0.6rem 0.8rem; border-radius: 6px; margin: 0.25rem 0 0.75rem; border-left: 4px solid; }
+.msg-info { background: var(--surface); border-color: var(--bs-primary); }
+.msg-warning { background: var(--mid-bg); border-color: var(--mid); }
+.msg-error { background: var(--high-bg); border-color: var(--high); }
+
+.privacy-note {
+  background: var(--surface); border: 1px solid var(--rule); border-radius: 6px;
+  padding: 0.6rem 0.8rem; font-size: 0.9rem; margin-bottom: 0.9rem;
+}
+
+.data-table { font-variant-numeric: tabular-nums; margin-bottom: 0.5rem; }
+.data-table th { font-weight: 600; color: var(--ink-soft); border-bottom-width: 2px; }
+.row-error td { color: var(--high); }
+.ok { color: var(--low); font-weight: 700; }
+.bad { color: var(--high); font-weight: 700; }
+
+.explainer { margin: 0.75rem 0; padding: 0.5rem 0.8rem; border: 1px solid var(--rule); border-radius: 6px; }
+.explainer summary { cursor: pointer; font-weight: 600; }
+.explainer p { margin: 0.5rem 0 0; font-size: 0.92rem; }
+.source-box { border-top: 1px solid var(--rule); padding-top: 0.6rem; margin-top: 0.4rem; }
+.citation { font-size: 0.88rem; margin-bottom: 0.3rem; }
+
+.about { max-width: 52rem; }
+.about h4 { margin-top: 1.4rem; font-size: 1.1rem; }
+
+.app-footer {
+  margin-top: 2rem; padding: 1rem 0 1.5rem; border-top: 1px solid var(--rule);
+  color: var(--ink-soft); font-size: 0.85rem; display: grid; gap: 0.25rem;
+}
+.app-footer .fine-print { font-size: 0.8rem; }
+
+:focus-visible { outline: 3px solid var(--bs-primary); outline-offset: 2px; }

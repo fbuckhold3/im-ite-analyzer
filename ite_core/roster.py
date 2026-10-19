@@ -13,6 +13,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from .limits import ISSUE_HINT, MAX_ROSTER_ROWS, UploadError, check_rows
+
 # ACP column stem -> short key used in ite_core column names
 AREAS = {
     "Cardiology": "cards",
@@ -57,15 +59,25 @@ def clean_id(x) -> str | None:
     return s
 
 
+def _label(source, filename) -> str:
+    """Safe display name: never str() raw bytes / buffers into a user-facing message."""
+    if filename:
+        return Path(str(filename)).name
+    return Path(source).name if isinstance(source, (str, Path)) else "uploaded file"
+
+
 def read_table(source, filename: str | None = None) -> pd.DataFrame:
     """Read .xlsx/.xls/.csv from a path, bytes, or file-like object. Everything as text."""
-    name = str(filename or source)
+    name = _label(source, filename)
     is_csv = name.lower().endswith(".csv")
     if isinstance(source, (bytes, bytearray)):
         source = io.BytesIO(source)
-    if is_csv:
-        return pd.read_csv(source, dtype=str)
-    return pd.read_excel(source, dtype=str)
+    try:
+        df = pd.read_csv(source, dtype=str) if is_csv else pd.read_excel(source, dtype=str)
+    except Exception as e:  # damaged / wrong-format file
+        raise UploadError(f"“{name}” could not be read as a spreadsheet.") from e
+    check_rows(name, len(df), MAX_ROSTER_ROWS)
+    return df
 
 
 def load_roster(
@@ -93,11 +105,14 @@ def load_roster(
     )
     missing = [k for k, v in required.items() if v is None]
     if missing:
-        raise ValueError(f"Not an ACP roster file — missing column(s): {', '.join(missing)}")
+        raise UploadError(
+            f"“{_label(source, filename)}” is not an ACP roster file — missing column(s): "
+            f"{', '.join(missing)}. {ISSUE_HINT}"
+        )
 
-    yr = year or year_from_filename(filename or source)
+    yr = year or (year_from_filename(filename or source) if (filename or isinstance(source, (str, Path))) else None)
     if yr is None:
-        raise ValueError("Could not tell the exam year from the file name — please enter it.")
+        raise UploadError(f"Could not tell the exam year from “{_label(source, filename)}” — please enter it.")
 
     num = lambda c: pd.to_numeric(raw[c], errors="coerce") if c else pd.Series(np.nan, index=raw.index)
     out = pd.DataFrame(
@@ -129,7 +144,7 @@ def load_roster(
     out["PGY"] = out.PGY.astype(int)
     dupes = out.ID[out.ID.duplicated()].tolist()
     info = dict(
-        filename=str(filename or source),
+        filename=_label(source, filename),
         year=yr,
         rows_in_file=n_raw,
         rows_kept=len(out),
@@ -155,7 +170,7 @@ def load_rosters(files: list, include_pgy4: bool = False) -> tuple[pd.DataFrame,
     clash = long.duplicated(["ID", "Exam_Year"], keep=False)
     if clash.any():
         years = sorted(long.loc[clash, "Exam_Year"].unique().tolist())
-        raise ValueError(
+        raise UploadError(
             f"The same Candidate ID appears twice for exam year(s) {years} — was one year's roster uploaded twice?"
         )
     return long, infos

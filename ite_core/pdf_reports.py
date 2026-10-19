@@ -17,6 +17,8 @@ import re
 import pandas as pd
 import pypdf
 
+from .limits import ISSUE_HINT, UploadError, check_pages
+
 # Content areas as ACP prints them in reports (HVC is a cross-cutting area)
 REPORT_AREAS = [
     "Cardiology",
@@ -35,12 +37,20 @@ REPORT_AREAS = [
 RED_GAP, YELLOW_GAP = -10, -20
 
 
-def pdf_pages(source) -> list[str]:
-    """Layout-preserving text of every page."""
+def pdf_pages(source, name: str = "PDF") -> list[str]:
+    """Layout-preserving text of every page. Raises UploadError for unreadable / encrypted / oversized PDFs."""
     if isinstance(source, (bytes, bytearray)):
         source = io.BytesIO(source)
-    reader = pypdf.PdfReader(source)
-    return [p.extract_text(extraction_mode="layout") or "" for p in reader.pages]
+    try:
+        reader = pypdf.PdfReader(source)
+        if reader.is_encrypted and not reader.decrypt(""):
+            raise UploadError(f"“{name}” is password-protected. Please upload the unprotected ACP PDF.")
+        check_pages(name, len(reader.pages))
+        return [p.extract_text(extraction_mode="layout") or "" for p in reader.pages]
+    except UploadError:
+        raise
+    except Exception as e:  # pypdf raises many types for damaged files
+        raise UploadError(f"“{name}” could not be read as a PDF.") from e
 
 
 def _year(text: str) -> int | None:
@@ -128,8 +138,11 @@ def _parse_one_examinee(pages: list[str], meta: dict) -> dict:
     return out
 
 
-def parse_examinee_pdf(source) -> list[dict]:
-    return parse_examinee_text(pdf_pages(source))
+def parse_examinee_pdf(source, name: str = "PDF") -> list[dict]:
+    reps = [r for r in parse_examinee_text(pdf_pages(source, name)) if r["candidate_id"]]
+    if not reps or all(r["pct_correct"] is None for r in reps):
+        raise UploadError(f"“{name}” doesn't look like an ACP IM-ITE Examinee Performance Report. {ISSUE_HINT}")
+    return reps
 
 
 # ---------------------------------------------------------------------- program report
@@ -248,5 +261,8 @@ def flag_items(df: pd.DataFrame, red: int = RED_GAP, yellow: int = YELLOW_GAP) -
     return out
 
 
-def parse_program_pdf(source) -> dict:
-    return parse_program_text(pdf_pages(source))
+def parse_program_pdf(source, name: str = "PDF") -> dict:
+    p = parse_program_text(pdf_pages(source, name))
+    if p["items"].empty and p["areas"].empty:
+        raise UploadError(f"“{name}” doesn't look like an ACP IM-ITE Program Performance Report. {ISSUE_HINT}")
+    return p

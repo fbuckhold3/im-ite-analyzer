@@ -114,7 +114,7 @@ gain % correct and lose percentile).
 
 ## 7. Build order
 1. ✅ `ite_core` + tests; validated against a private real-data analysis.
-2. Upload & Align tab with crosswalk export/import; quick-calculator tab.
+2. ✅ Upload & Align tab with crosswalk export/import; quick-calculator tab; demo data; upload hardening.
 3. Trends + class matrix. 4. ABIM tab. 5. MKSAP tab. 6. Resident self-analysis tab.
 7. Item gaps + report downloads. 8. PDF splitter + emailing manifest.
 

@@ -15,7 +15,7 @@ BLOCKED_EXT = {".xlsx", ".xls", ".csv", ".pdf", ".rds", ".sav", ".dta", ".parque
 SKIP_CONTENT = {"LICENSE"}  # official license text
 EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 EMAIL_OK = re.compile(r"@(example\.(com|org)|users\.noreply\.github\.com)$|^noreply@", re.I)
-CANDIDATE_ID = re.compile(r"(?<![\d.-])\d{7}(?![\d.-])")
+CANDIDATE_ID = re.compile(r"(?<![\w.-])\d{7}(?![\w.-])")  # standalone, not inside a hash or code
 
 root = Path(__file__).resolve().parents[1]
 local = root / ".data-guard-local.txt"
