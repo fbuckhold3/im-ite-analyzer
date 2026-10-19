@@ -1,0 +1,44 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below, and cite McDonald et al. (2020) for the ABIM pass-probability curves."
+title: "im-ite-analyzer: ACP IM-ITE and MKSAP analysis for internal medicine residency programs"
+type: software
+authors:
+  - family-names: Buckhold
+    given-names: Fred
+    orcid: "https://orcid.org/0000-0001-9049-3870"
+version: 0.1.0
+license: Apache-2.0
+repository-code: "https://github.com/fbuckhold3/im-ite-analyzer"
+keywords:
+  - graduate medical education
+  - internal medicine
+  - in-training examination
+  - board certification
+  - MKSAP
+references:
+  - type: article
+    title: "Correlations Between the USMLE Step Examinations, American College of Physicians In-Training Examination, and ABIM Internal Medicine Certification Examination"
+    authors:
+      - family-names: McDonald
+        given-names: Furman S.
+      - family-names: Jurich
+        given-names: Daniel
+      - family-names: Duhigg
+        given-names: Lauren M.
+      - family-names: Paniagua
+        given-names: Miguel
+      - family-names: Chick
+        given-names: Davoren
+      - family-names: Wells
+        given-names: Margaret
+      - family-names: Williams
+        given-names: Amber
+      - family-names: Alguire
+        given-names: Patrick
+    journal: "Academic Medicine"
+    year: 2020
+    volume: 95
+    issue: 9
+    start: 1388
+    end: 1395
+    doi: "10.1097/ACM.0000000000003382"

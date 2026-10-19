@@ -1,0 +1,32 @@
+[project]
+name = "im-ite-analyzer"
+version = "0.1.0"
+description = "ACP IM-ITE and MKSAP analysis for internal medicine residents and program directors"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Fred Buckhold" }]
+requires-python = ">=3.11"
+# Runtime dependencies are pinned for deployment in requirements.txt (read by Posit Connect).
+
+[project.urls]
+Repository = "https://github.com/fbuckhold3/im-ite-analyzer"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["reference"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E731"]   # small lambdas are used deliberately in aggregation tables
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/conftest.py" = ["E501"]   # fixtures reproduce wide ACP PDF text layouts verbatim

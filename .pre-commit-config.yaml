@@ -1,0 +1,21 @@
+# Install once: .venv/bin/pre-commit install
+repos:
+  - repo: local
+    hooks:
+      - id: no-data
+        name: block resident/program data
+        entry: python scripts/check_no_data.py
+        language: python
+        pass_filenames: true
+      - id: ruff
+        name: ruff lint
+        entry: ruff check --fix
+        language: python
+        additional_dependencies: ["ruff==0.17.1"]
+        types: [python]
+      - id: ruff-format
+        name: ruff format
+        entry: ruff format
+        language: python
+        additional_dependencies: ["ruff==0.17.1"]
+        types: [python]

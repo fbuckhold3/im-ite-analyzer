@@ -1,0 +1,24 @@
+im-ite-analyzer
+Copyright 2026 Fred Buckhold (ORCID 0000-0001-9049-3870)
+
+This product was created by Fred Buckhold, who designed its content, analyses and
+educational interpretation. Licensed under the Apache License, Version 2.0 (see LICENSE).
+Redistributions and derivative works must retain this NOTICE file (Apache-2.0, section 4(d)).
+
+-------------------------------------------------------------------------------
+Third-party sources and attributions
+-------------------------------------------------------------------------------
+
+ABIM pass-probability estimates approximate the prediction curves published in:
+  McDonald FS, Jurich D, Duhigg LM, Paniagua M, Chick D, Wells M, Williams A, Alguire P.
+  Correlations Between the USMLE Step Examinations, American College of Physicians
+  In-Training Examination, and ABIM Internal Medicine Certification Examination.
+  Acad Med. 2020;95(9):1388-1395. doi:10.1097/ACM.0000000000003382
+The coefficients used here are a logistic fit to points read from those published curves;
+they are not coefficients published by the authors. The authors and their organizations
+have not reviewed or endorsed this software.
+
+IM-ITE(R) and MKSAP(R) are registered trademarks of the American College of Physicians (ACP).
+This software reads report files produced by ACP but is not affiliated with, sponsored by,
+or endorsed by ACP, the American Board of Internal Medicine (ABIM), or the National Board
+of Medical Examiners (NBME).

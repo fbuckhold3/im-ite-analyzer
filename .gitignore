@@ -1,0 +1,40 @@
+# ── Virtual environment ──────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ── Python cache / tooling ───────────────────────────────────
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# ── Resident / program data — NEVER commit (repo is public) ──
+*.xlsx
+*.xls
+*.csv
+*.pdf
+*.html
+*.rds
+validation_targets.json
+
+# ── Private reference implementation (program-specific; kept local only) ──
+reference/
+
+# ── Local / editor ───────────────────────────────────────────
+.DS_Store
+.claude/
+.positron/
+.Renviron
+.Renviron.local
+*.env
+.env
+
+# ── Posit Connect deploy cache ───────────────────────────────
+rsconnect/
+rsconnect-python/
+CLAUDE.local.md
+.data-guard-local.txt
