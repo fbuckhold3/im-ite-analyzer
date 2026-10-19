@@ -27,7 +27,8 @@ Private, machine-local notes (if present): `CLAUDE.local.md`.
 - Python 3.12 in `.venv/`. `requirements.txt` = runtime; `requirements-dev.txt` adds pytest, ruff, pre-commit.
 - Lint/format: `.venv/bin/ruff check . && .venv/bin/ruff format --check .` (config in pyproject.toml).
 - Run: `.venv/bin/shiny run app.py --reload`.
-- Deploy: Posit Connect Cloud from GitHub. `requirements.txt` pins exact versions; regenerate `manifest.json`
+- Deploy: Posit Connect Cloud from GitHub — it builds with **Python 3.11** (ignored manifest/.python-version 3.12
+  on 2026-10-19), so every pin must support 3.11; CI runs 3.11 + 3.12. `requirements.txt` pins exact versions; regenerate `manifest.json`
   with `scripts/write_manifest.sh` (explicit deploy file list — never run write-manifest on the repo root,
   it would list local-only files). **Gotcha:** manifest.json carries its own copy of the package list.
 - PDFs read with `pypdf` (pure Python). Never shell out to `pdftotext` — not on the server.
