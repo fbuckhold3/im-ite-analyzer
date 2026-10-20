@@ -15,6 +15,7 @@ Usage:  .venv/bin/python scripts/validate_real_data.py <data_dir>
 """
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -226,6 +227,44 @@ check(
     0,
 )
 check("content-area rows (12 areas + total)", int(prog["areas"].area.ne("Number of Residents").sum()), 13)
+
+if "area_ranks" in T:
+    ar = pdf_reports.area_ranks(prog["areas"]).set_index("area")
+    for area, want in T["area_ranks"].items():
+        check(f"area rank: {area}", {k: int(ar.loc[area, k]) for k in want}, want)
+    check("residents per PGY group", pdf_reports.residents_per_group(prog["areas"]), T["residents_per_group"])
+
+print("\n== 5b. Downloadable reports (built from the real data; leak check only)")
+from ite_core import session as S  # noqa: E402
+from modules import report_builder  # noqa: E402
+
+mk_obj = S.Mksap(name="detail", people=people, sections=mk_sections, bank=int(people.mk_bank.max()), kind="detail")
+rost = S.Rosters(long=long, files=pd.DataFrame(), current_year=cur_year)
+ds_real = S.Dataset(rosters=rost, mksap=mk_obj, crosswalk=cw, wide=w)
+ident = report_builder.build_report(ds_real, prog, deidentified=False).decode()
+deid = report_builder.build_report(ds_real, prog, deidentified=True).decode()
+check("identified report includes the watch list", "Watch list" in ident, True)
+content = report_builder.content_without_library(deid)  # plotly.js source contains name-like substrings
+
+
+def _full_names(name):
+    last, _, first = name.partition(",")
+    last, first = last.strip(), first.strip().split(" ")[0] if first.strip() else ""
+    return [f"{last}, {first}", f"{first} {last}"] if first else [last]
+
+
+full_hits = sum(
+    1
+    for n in long.Name.dropna().unique()
+    if any(re.search(rf"\b{re.escape(v)}\b", content, re.I) for v in _full_names(n))
+)
+id_hits = sum(1 for i in long.ID.unique() if re.search(rf"\b{i}\b", content))
+check("de-identified report: full resident names found", full_hits, 0)
+check("de-identified report: candidate IDs found", id_hits, 0)
+surname_only = sum(
+    1 for s in {n.split(",")[0].strip() for n in long.Name.dropna()} if re.search(rf"\b{re.escape(s)}\b", content)
+)
+print(f"  [info] surname-only, exact-case word matches (e.g. a citation author or an ordinary word): {surname_only}")
 
 print("\n== 6. Examinee reports vs roster")
 reps = pdf_reports.parse_examinee_pdf(one("*Resident Score Reports*.pdf", "score_reports"))

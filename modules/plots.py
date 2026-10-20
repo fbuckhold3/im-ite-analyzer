@@ -11,7 +11,13 @@ PGY_COLOR = {1: "#0072B2", 2: "#E69F00", 3: "#009E73"}
 BAND = {"High": "rgba(213, 94, 0, 0.10)", "Intermediate": "rgba(230, 159, 0, 0.10)", "Low": "rgba(0, 158, 115, 0.08)"}
 POINTS_TRACE = 3  # index of the "your scores" trace
 # Vertical toolbar on the right edge, so it never covers titles (it is always visible on touch screens)
-MODEBAR = dict(orientation="v", bgcolor="rgba(255,255,255,0.7)")
+# Privacy: never offer Plotly's cloud "Share chart" / "Edit in Chart Studio" buttons — they upload chart data
+# (resident names and scores) to a third-party service.
+MODEBAR = dict(
+    orientation="v",
+    bgcolor="rgba(255,255,255,0.7)",
+    remove=["sendChartToCloud", "sendDataToCloud", "editInChartStudio", "lasso2d", "select2d"],
+)
 
 
 def widget_safe(fig):
@@ -28,6 +34,7 @@ def widget_safe(fig):
             return None
         return v.item() if isinstance(v, np.generic) else v
 
+    fig.layout.modebar.remove = MODEBAR["remove"]  # privacy backstop: no cloud-share buttons on any chart
     for tr in fig.data:
         for attr in ("x", "y", "customdata", "text"):
             val = getattr(tr, attr, None)
@@ -272,7 +279,7 @@ def class_trajectories_figure(t, value_label: str = "Mean percentile"):
     return widget_safe(fig)
 
 
-def yoy_scatter(pts, outcome: str = "percentile"):
+def yoy_scatter(pts, outcome: str = "percentile", labels: bool = True):
     """Last year vs this year for the same residents, coloured by current PGY; diagonal = no change."""
     pre, cur, lab = (
         ("ile_prev", "ile_cur", "percentile") if outcome == "percentile" else ("pc_prev", "pc_cur", "% correct")
@@ -294,8 +301,9 @@ def yoy_scatter(pts, outcome: str = "percentile"):
                     line=dict(color="#1a1a1a", width=0.8),
                     symbol="circle" if p == 2 else "diamond",
                 ),
-                text=d.Name,
-                hovertemplate=f"%{{text}}<br>Last year %{{x:.0f}} → this year %{{y:.0f}} ({lab})<extra></extra>",
+                text=d.Name if labels else None,
+                hovertemplate=("%{text}<br>" if labels else "")
+                + f"Last year %{{x:.0f}} → this year %{{y:.0f}} ({lab})<extra></extra>",
             )
         )
     if outcome == "percentile":
@@ -428,7 +436,7 @@ def thirds_bar(by_pgy, pooled, outcome: str = "pct"):
     return widget_safe(fig)
 
 
-def mksap_scatter(pts, outcome: str = "pct"):
+def mksap_scatter(pts, outcome: str = "pct", labels: bool = True):
     """Questions answered (log) vs ITE change, coloured by PGY, with a least-squares trend on log(1 + questions)."""
     from ite_core.stats import trend_line
 
@@ -446,14 +454,14 @@ def mksap_scatter(pts, outcome: str = "pct"):
                 y=d[col],
                 mode="markers",
                 name=f"Now PGY-{p}",
-                text=d.Name,
+                text=d.Name if labels else None,
                 marker=dict(
                     size=10,
                     color=PGY_COLOR[p],
                     line=dict(color="#1a1a1a", width=0.8),
                     symbol="circle" if p == 2 else "diamond",
                 ),
-                hovertemplate="%{text}: %{x:,.0f} questions, change %{y:+.0f}<extra></extra>",
+                hovertemplate=("%{text}: " if labels else "") + "%{x:,.0f} questions, change %{y:+.0f}<extra></extra>",
             )
         )
     xs, ys = trend_line(pts.mk_answered, pts[col])
@@ -477,6 +485,46 @@ def mksap_scatter(pts, outcome: str = "pct"):
         font=FONT,
         xaxis=dict(title="MKSAP questions answered (log scale)", type="log", tickvals=[10, 30, 100, 300, 1000, 3000]),
         yaxis=dict(title=label),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    )
+    return widget_safe(fig)
+
+
+# ------------------------------------------------------------------ item gaps
+def area_ranks_figure(ranks):
+    """Program percentile rank among all programs, per content area: one marker per PGY group, All as a diamond."""
+    d = ranks[ranks.area != "Total Test"].iloc[::-1]  # first area at the top
+    fig = go.Figure()
+    groups = [
+        ("1", "PGY-1", PGY_COLOR[1], "circle"),
+        ("2", "PGY-2", PGY_COLOR[2], "square"),
+        ("3", "PGY-3", PGY_COLOR[3], "triangle-up"),
+        ("A", "All PGYs", "#1a1a1a", "diamond"),
+    ]
+    for k, name, color, symbol in groups:
+        fig.add_trace(
+            go.Scatter(
+                x=d[f"rank{k}"],
+                y=d.area,
+                mode="markers",
+                name=name,
+                marker=dict(
+                    size=13 if k == "A" else 9, color=color, symbol=symbol, line=dict(color="#1a1a1a", width=0.6)
+                ),
+                customdata=d[[f"our{k}", f"all{k}"]].values,
+                hovertemplate=f"%{{y}} · {name}: rank %{{x}} (program %{{customdata[0]}}% vs all %{{customdata[1]}}%)"
+                "<extra></extra>",
+            )
+        )
+    fig.add_vline(x=50, line=dict(color="#9aa0a6", dash="dot", width=1))
+    fig.update_layout(
+        height=70 + 30 * len(d),
+        margin=dict(l=10, r=15, t=40, b=45),
+        template="plotly_white",
+        modebar=MODEBAR,
+        font=FONT,
+        xaxis=dict(title="Program percentile rank among all programs (50 = middle)", range=[0, 100]),
+        yaxis=dict(automargin=True),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
     return widget_safe(fig)

@@ -261,3 +261,80 @@ def sample_examinee_reports() -> list[dict]:
     from .pdf_reports import parse_examinee_text
 
     return parse_examinee_text(_sample_pages(2025, 1, 0, 59, 45) + _sample_pages(2026, 2, 1, 67, 50))
+
+
+# ------------------------------------------------------------------ sample Program Performance Report
+_VERBS = ["Diagnose", "Manage", "Treat", "Evaluate", "Recognize", "Prevent", "Screen for"]
+_THINGS = [
+    "an invented condition",
+    "a fictional syndrome",
+    "a made-up complication",
+    "an imaginary disorder",
+    "a pretend presentation",
+    "a hypothetical finding",
+]
+
+
+def sample_program_report(seed: int = 11) -> dict:
+    """An invented ACP Program Performance Report, already parsed (areas + flagged items). Program 100000."""
+    from .pdf_reports import parse_program_text
+
+    rng = np.random.default_rng(seed)
+    areas = [
+        "Cardiology",
+        "Endocrinology",
+        "Gastroenterology",
+        "General Internal Medicine",
+        "Geriatric Medicine",
+        "Hematology/Oncology",
+        "Infectious Diseases",
+        "Nephrology",
+        "Neurology",
+        "Pulmonary and Critical Care Medicine",
+        "Rheumatology",
+    ]
+    p1 = (
+        "                     2026 INTERNAL MEDICINE IN-TRAINING EXAMINATION\n"
+        "                                PROGRAM PERFORMANCE REPORT\n"
+        "PROGRAM NAME:               DEMO INTERNAL MEDICINE PROGRAM                       PROGRAM:            100000\n"
+    )
+    lines = [
+        "2026 INTERNAL MEDICINE IN-TRAINING EXAMINATION:  PROGRAM PERFORMANCE REPORT        PROGRAM:            100000",
+        "                                 2026 MEAN PERCENT CORRECT SCORES",
+    ]
+    for a in areas + ["High Value Care**"]:
+        nums = []
+        for nat in (60, 67, 70, 66):
+            ours = int(nat + rng.normal(0, 4))
+            nums += [nat, ours, int(np.clip(50 + 6 * (ours - nat) + rng.normal(0, 8), 1, 99))]
+        lines.append(f"{a:<40}" + "".join(f"{n:<11}" for n in nums))
+    lines.append(
+        f"{'Total Test (SD)':<40}60 (9)     60 (6)     51         67 (9)     68 (8)      60        70 (8)    "
+        "70 (8)     53         66 (9)     66 (8)     55"
+    )
+    lines.append(
+        f"{'Number of Residents':<40}12500      10                    12800       10                    "
+        "11600      10                    37000      30"
+    )
+    p2 = "\n".join(lines) + "\n"
+    item_pages = []
+    for a in areas:
+        rows = [
+            f"Educational Objectives for {a} Items                          ALL   Your    ALL   Your    ALL   Your  "
+            "ALL   Your"
+        ]
+        for k in range(int(rng.integers(3, 7))):
+            obj = f"{_VERBS[(k + len(a)) % len(_VERBS)]} {_THINGS[k % len(_THINGS)]} ({a.split()[0].lower()} {k + 1})."
+            if k == 1:
+                obj = obj[:-1] + ".**"  # HVC marker, as ACP prints it
+            nat = [int(x) for x in rng.integers(35, 90, 3)]
+            ours = [int(np.clip(n + rng.normal(-3, 12), 0, 100)) for n in nat]
+            nat_a, our_a = int(np.mean(nat)), int(np.mean(ours))
+            nums = [nat[0], ours[0], nat[1], ours[1], nat[2], ours[2], nat_a, our_a]
+            rows.append(f"{obj:<70}" + "".join(f"{n:>6}" for n in nums))
+        item_pages.append(
+            "2026 INTERNAL MEDICINE IN-TRAINING EXAMINATION:  PROGRAM PERFORMANCE REPORT\n" + "\n".join(rows)
+        )
+    rep = parse_program_text([p1, p2] + item_pages)
+    rep["file"] = "DEMO Program Performance Report"
+    return rep

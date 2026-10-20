@@ -5,6 +5,17 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 ### Added
+- **Item gaps** sub-tab from the ACP Program Performance Report (new optional PDF upload on Upload & Align):
+  content-area percentile ranks among programs by PGY group, red/yellow item flags with adjustable cutoffs, a
+  filterable item table, flagged-items CSV and all-items Excel downloads. Invented sample report in the demo.
+- **Reports** sub-tab: self-contained HTML downloads (charts interactive offline) — an identified PD report
+  (watch list, names) and a de-identified program summary (aggregates only; counts of 1–4 and groups under 5
+  suppressed, with complementary suppression so hidden counts can't be recovered by subtraction; unlabeled
+  points). `modules/report_builder.py`.
+
+### Security
+- Removed Plotly's "Share chart" (Plotly Cloud upload) and Chart Studio buttons from every chart in the app and
+  the reports, so resident data can't be uploaded to a third party from a chart toolbar.
 - MKSAP **members overview** export accepted alongside the full detail export (detected from the columns);
   every analysis works with either except section coverage, which needs the full detail. Upload & Align shows
   the export type and bank size; "How to get your program's MKSAP export" help and `docs/MKSAP_EXPORT.md`

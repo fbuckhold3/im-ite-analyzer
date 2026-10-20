@@ -12,8 +12,10 @@ from shiny import App, ui
 from modules.board import board_server, board_ui
 from modules.calculator import calculator_server, calculator_ui
 from modules.common import REPO, citation, footer, how_to_read
+from modules.items_tab import items_server, items_ui
 from modules.mksap_tab import mksap_server, mksap_ui
 from modules.program_tabs import classes_server, classes_ui, trends_server, trends_ui, yoy_server, yoy_ui
+from modules.reports_tab import reports_server, reports_ui
 from modules.resident import resident_server, resident_ui
 from modules.upload_align import upload_server, upload_ui
 
@@ -72,6 +74,8 @@ app_ui = ui.page_navbar(
             ui.nav_panel("Year over year", yoy_ui("yoy"), value="yoy"),
             ui.nav_panel("Board pass", board_ui("board"), value="board"),
             ui.nav_panel("MKSAP", mksap_ui("mksap"), value="mksap"),
+            ui.nav_panel("Item gaps", items_ui("items"), value="items"),
+            ui.nav_panel("Reports", reports_ui("reports"), value="reports"),
             id="program_nav",
         ),
         value="program",
@@ -90,12 +94,14 @@ app_ui = ui.page_navbar(
 def server(input, output, session):
     calculator_server("calc")
     resident_server("me")
-    dataset = upload_server("upload")  # the session dataset every Program data sub-tab reads
+    dataset, program = upload_server("upload")  # session dataset + parsed Program Performance Report
     trends_server("trends", dataset=dataset)
     classes_server("classes", dataset=dataset)
     yoy_server("yoy", dataset=dataset)
     board_server("board", dataset=dataset)
     mksap_server("mksap", dataset=dataset)
+    items_server("items", program=program)
+    reports_server("reports", dataset=dataset, program=program)
 
 
 app = App(app_ui, server)

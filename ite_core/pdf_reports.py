@@ -268,3 +268,36 @@ def parse_program_pdf(source, name: str = "PDF") -> dict:
     if p["items"].empty and p["areas"].empty:
         raise UploadError(f"“{name}” doesn't look like an ACP IM-ITE Program Performance Report. {ISSUE_HINT}")
     return p
+
+
+# ------------------------------------------------------------------ program-report helpers
+def area_ranks(areas: pd.DataFrame) -> pd.DataFrame:
+    """Content-area rows only (no 'Number of Residents'), with the program's percentile rank among programs."""
+    return areas[areas.area != "Number of Residents"].reset_index(drop=True)
+
+
+def residents_per_group(areas: pd.DataFrame) -> dict:
+    """Program residents per PGY group from the 'Number of Residents' row ({'1': 25, ..., 'A': 81})."""
+    row = areas[areas.area == "Number of Residents"]
+    if row.empty:
+        return {}
+    r = row.iloc[0]
+    return {k: int(r[f"our{k}"]) for k in ("1", "2", "3", "A") if pd.notna(r.get(f"our{k}"))}
+
+
+def items_summary(items: pd.DataFrame) -> dict:
+    """Counts of items and flags, overall and by content area (flagged areas first)."""
+    by_area = (
+        items.assign(red=items.flag.eq("red"), yellow=items.flag.eq("yellow"))
+        .groupby("area")
+        .agg(items=("objective", "size"), red=("red", "sum"), yellow=("yellow", "sum"), mean_gapA=("gapA", "mean"))
+        .round(1)
+        .sort_values(["red", "yellow", "mean_gapA"], ascending=[False, False, True])
+        .reset_index()
+    )
+    return dict(
+        n=int(len(items)),
+        red=int(items.flag.eq("red").sum()),
+        yellow=int(items.flag.eq("yellow").sum()),
+        by_area=by_area,
+    )

@@ -56,6 +56,12 @@ def upload_ui():
                 ),
                 mksap_howto(),
                 ui.input_file(
+                    "program_pdf",
+                    "ACP Program Performance Report (PDF, optional) — for item-level gaps",
+                    accept=[".pdf"],
+                    button_label="Choose PDF…",
+                ),
+                ui.input_file(
                     "crosswalk",
                     "Saved crosswalk from an earlier session (optional)",
                     accept=[".csv"],
@@ -73,6 +79,7 @@ def upload_ui():
                 ui.card_header("2 · What we found"),
                 ui.output_ui("files"),
                 ui.output_ui("mksap_status"),
+                ui.output_ui("program_status"),
                 ui.output_ui("coverage"),
             ),
             col_widths=(5, 7),
@@ -88,6 +95,8 @@ def upload_server(input, output, session):
     prior_cw: reactive.Value[pd.DataFrame | None] = reactive.value(None)
     crosswalk: reactive.Value[pd.DataFrame | None] = reactive.value(None)
     is_demo = reactive.value(False)
+    program: reactive.Value[dict | None] = reactive.value(None)
+    program_err: reactive.Value[str | None] = reactive.value(None)
 
     # ------------------------------------------------------------------ intake
     @reactive.effect
@@ -116,11 +125,30 @@ def upload_server(input, output, session):
             ui.notification_show(str(e), type="error", duration=10)
 
     @reactive.effect
+    @reactive.event(input.program_pdf)
+    def _program_pdf():
+        files = input.program_pdf() or []
+        if not files:
+            return
+        up = _take(files[0])
+        try:
+            program.set(S.load_program_report(up))
+            program_err.set(None)
+        except UploadError as e:
+            program.set(None)
+            program_err.set(str(e))
+        except Exception:
+            program.set(None)
+            program_err.set(f"“{up.name}” could not be processed.")
+
+    @reactive.effect
     @reactive.event(input.demo)
     def _demo():
         d = demo.make_demo()
         roster_ups.set([S.Upload(n, b) for n, b in d["rosters"]])
         mksap_up.set(S.Upload(*d["mksap"]))
+        program.set(demo.sample_program_report())
+        program_err.set(None)
         prior_cw.set(None)
         is_demo.set(True)
 
@@ -131,6 +159,8 @@ def upload_server(input, output, session):
         mksap_up.set(None)
         prior_cw.set(None)
         crosswalk.set(None)
+        program.set(None)
+        program_err.set(None)
         is_demo.set(False)
 
     # ------------------------------------------------------------- processing
@@ -216,6 +246,22 @@ def upload_server(input, output, session):
         )
         demo_note = message("Showing invented demo data.", "info") if is_demo.get() else None
         return ui.div(demo_note, ui.tags.table(head, ui.tags.tbody(*rows), class_="table table-sm data-table"))
+
+    @render.ui
+    def program_status():
+        if program_err.get():
+            return message(program_err.get(), "error")
+        rep = program.get()
+        if rep is None:
+            return None
+        from ite_core.pdf_reports import items_summary
+
+        s = items_summary(rep["items"])
+        return ui.p(
+            f"Program Performance Report {rep.get('exam_year') or ''}: {s['n']} items, {s['red']} red and "
+            f"{s['yellow']} yellow flags — see Item gaps.",
+            class_="hint",
+        )
 
     @render.ui
     def mksap_status():
@@ -378,4 +424,4 @@ def upload_server(input, output, session):
         if cw is not None:
             yield S.crosswalk_csv(cw)
 
-    return dataset
+    return dataset, program

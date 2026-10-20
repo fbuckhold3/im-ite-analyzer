@@ -32,7 +32,7 @@
       "checksum": "316e5466344483b3ca9a37a55601af05"
     },
     "app.py": {
-      "checksum": "1ff0b2db3157c1283dbc83b2a3c3826d"
+      "checksum": "96f003f8e7efbe92bfc0218eec32e492"
     },
     "ite_core/__init__.py": {
       "checksum": "83e584a570d0635ebdfff0bfc14b1b5d"
@@ -41,7 +41,7 @@
       "checksum": "e325c2fa4a87b3e002069cf4a5352515"
     },
     "ite_core/demo.py": {
-      "checksum": "6a0e83f84c39688e4c7b1173b9745c6b"
+      "checksum": "6e043763e7e32d4966131e2eecdd4db3"
     },
     "ite_core/history.py": {
       "checksum": "420d533eb7704a9480de950c965a641e"
@@ -62,13 +62,13 @@
       "checksum": "2987e2670b7c8ccd7a22f87698b52d1c"
     },
     "ite_core/pdf_reports.py": {
-      "checksum": "91fb4a5da5dea9022f2e2cb00c52b3ee"
+      "checksum": "4940d14006a1f7b889911c990a0ef2d1"
     },
     "ite_core/roster.py": {
       "checksum": "044af7d1cc4e6180646d7f265acd7c66"
     },
     "ite_core/session.py": {
-      "checksum": "88ac5e9a1cd6d7f5ec23ec58db62f0d2"
+      "checksum": "26d889fe32b959a853e72e4c0f835e54"
     },
     "ite_core/stats.py": {
       "checksum": "5b77ad4f99875e96106161dfdd5d6047"
@@ -83,22 +83,31 @@
       "checksum": "667aaa220d809514bbf935ea436a21dc"
     },
     "modules/common.py": {
-      "checksum": "39b4dfbda4e6a85a24a95f372f7dfc43"
+      "checksum": "b1783081f0c27c7e75e0d4a6154c49f1"
+    },
+    "modules/items_tab.py": {
+      "checksum": "4a9a23bf0a0b71f7e3fb20b52f50f9cf"
     },
     "modules/mksap_tab.py": {
       "checksum": "c641bf67f272e86bcd51ae6fbb4b91f1"
     },
     "modules/plots.py": {
-      "checksum": "d5282506109ce68d52b5c207caa06924"
+      "checksum": "32cd1a915d5b45fdbd1c911bf9cd569b"
     },
     "modules/program_tabs.py": {
       "checksum": "8c7d7040c8cb99eae31914c1f7926db2"
+    },
+    "modules/report_builder.py": {
+      "checksum": "88fc10241ffe4939fe1846e45ef6892b"
+    },
+    "modules/reports_tab.py": {
+      "checksum": "e6a82fe6c544a008ddaee4d6200d8195"
     },
     "modules/resident.py": {
       "checksum": "d46fdbe04f39bf63c30a495e277f6122"
     },
     "modules/upload_align.py": {
-      "checksum": "b0dda70097120615fddc9a90511a57fb"
+      "checksum": "5da69f3e8468eca608c9d760ba5f7466"
     },
     "www/app.css": {
       "checksum": "4fcda9eeacdc8acd0be2dff540d842c0"

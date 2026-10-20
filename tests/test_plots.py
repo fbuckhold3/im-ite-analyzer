@@ -92,3 +92,16 @@ def test_mksap_figures():
         plots.mksap_scatter(stats.mksap_points(w), "ile"),
     ):
         _assert_strict_json(fig)
+
+
+def test_no_cloud_share_buttons(data):
+    """Plotly's "Share chart" / Chart Studio buttons would upload resident data to a third party."""
+    from ite_core import board
+
+    long, w = data
+    for fig in (
+        plots.nomogram_figure(),
+        plots.program_nomogram(board.board_table(w)),
+        plots.yoy_scatter(stats.paired_points(w)),
+    ):
+        assert {"sendChartToCloud", "sendDataToCloud"} <= set(fig.layout.modebar.remove)

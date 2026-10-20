@@ -20,7 +20,8 @@ Private, machine-local notes (if present): `CLAUDE.local.md`.
 - `scripts/validate_real_data.py <dir>` checks ite_core against a private real-data analysis (aggregates only).
 - `scripts/check_no_data.py` blocks data files / emails from commits (pre-commit + CI).
 - `app.py` page_navbar + footer; `modules/` one Shiny module per tab (`calculator`, `resident`, `upload_align`) plus `program_tabs.py`
-  (Trends / Classes / Year-over-year sub-tabs under Program data), `board.py` (Board pass sub-tab), `mksap_tab.py` (MKSAP sub-tab), `common.py` (badges, citation, footer) and `plots.py` (plotly builders, updated in place via shinywidgets).
+  (Trends / Classes / Year-over-year sub-tabs under Program data), `board.py` (Board pass sub-tab), `mksap_tab.py` (MKSAP sub-tab), `items_tab.py` (Item gaps), `reports_tab.py` + `report_builder.py`
+  (HTML report downloads; builder is pure but lives in modules/ because it reuses plots), `common.py` (badges, citation, footer) and `plots.py` (plotly builders, updated in place via shinywidgets).
 - `upload_server()` returns a reactive `session.Dataset` (rosters, mksap, crosswalk, wide) — later tabs read it.
 - `ite_core/session.py` assembles uploads (pure); `ite_core/limits.py` caps + `UploadError`; `ite_core/demo.py` invented data.
 
@@ -42,7 +43,10 @@ Private, machine-local notes (if present): `CLAUDE.local.md`.
   only) for anything a user can cause; `app.sanitize_errors = True` hides everything else.
 - Nomogram: cite McDonald et al. 2020 wherever predictions are shown, and describe it as an
   approximation of the published curves (see docs/METHODS.md).
-- Every plot builder returns `widget_safe(fig)`: one NaN in widget data disconnects the session.
+- Every plot builder returns `widget_safe(fig)`: one NaN in widget data disconnects the session, and it also
+  strips Plotly's cloud buttons (`sendChartToCloud` in plotly.js 4 uploads chart data to Plotly Cloud).
+- De-identified outputs: suppress counts 1–4 and n<5 groups AND apply complementary suppression (totals are
+  visible); privacy checks must exclude the embedded plotly.js source (`content_without_library`).
 - Tier cutoffs are a setting (default High <50%, Intermediate 50–90%, Low ≥90%). Display probabilities with
   `common.fmt_prob` (rounds DOWN) so 89.8% never reads as "90%" next to an Intermediate badge.
 - `individual.ITE_TO_MKSAP` (ITE area → MKSAP section codes) is provisional, esp. GIM / Geriatrics.

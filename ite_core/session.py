@@ -11,8 +11,8 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from . import history, mksap, names, roster
-from .limits import CROSSWALK_EXT, MAX_FILES, MKSAP_EXT, ROSTER_EXT, UploadError, check_file
+from . import history, mksap, names, pdf_reports, roster
+from .limits import CROSSWALK_EXT, MAX_FILES, MKSAP_EXT, PDF_EXT, ROSTER_EXT, UploadError, check_file
 from .nomogram import DEFAULT_CUTOFFS
 
 
@@ -148,3 +148,11 @@ def build_wide(rosters: Rosters, mk: Mksap | None, cw: pd.DataFrame | None) -> p
 
 def crosswalk_csv(cw: pd.DataFrame) -> bytes:
     return cw[names.CROSSWALK_COLS].to_csv(index=False).encode()
+
+
+def load_program_report(up: Upload) -> dict:
+    """ACP Program Performance Report PDF -> {program_id, program_name, exam_year, areas, items (flagged)}."""
+    check_file(up.name, len(up.data), PDF_EXT, "PDF")
+    rep = pdf_reports.parse_program_pdf(up.data, name=up.name)
+    rep["file"] = up.name
+    return rep

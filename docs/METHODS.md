@@ -85,6 +85,15 @@ From the ACP Program Performance Report, gap = program % correct − national % 
 **Red**: All-PGY gap ≤ −10 points. **Yellow** (not red): any single-PGY gap ≤ −20 points. In a small program
 one resident moves a single-PGY percentage by several points, so treat flags as prompts for review, not findings.
 
+## 5b. Downloadable reports
+- **Identified PD report**: everything shown in the app, including names and the watch list. Confidential.
+- **De-identified program summary**: aggregates only — no names or IDs, no per-person tiers, unlabeled chart
+  points. Counts of 1–4 are shown as "<5" and group means from fewer than 5 residents are suppressed. Because
+  group sizes are visible elsewhere in the report, tiers are collapsed to *Below Low risk* vs *Low risk*, and Low
+  is shown as a range (e.g. "≥6") whenever Below Low is suppressed; the tier-change line is omitted if any change
+  count is under 5. Residual risk: unlabeled scatter points can still be recognised by someone who knows an
+  individual's scores — review before sharing outside the program.
+
 ## 6. Resident self-analysis (`individual.py`)
 Content areas are ranked by the resident's percentile (not % correct, since area difficulty differs).
 Strength ≥ 60th percentile; Focus < 35th, or the two weakest areas if none fall below 35th. Missed objectives
