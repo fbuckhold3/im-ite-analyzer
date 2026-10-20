@@ -131,7 +131,8 @@ for c in ("PGY", "Pct_Correct", "Percentile"):
     check(f"{c} differences", int((a.notna() & b.notna() & (a != b)).sum()), 0)
 
 print("\n== 3. MKSAP <-> ITE matching")
-people = mksap.per_person(mksap.load_mksap(one("*MKSAP*.csv", "mksap")))
+mk_raw = mksap.load_mksap(one("*MKSAP*.csv", "mksap"))
+people, mk_sections = mksap.per_person(mk_raw), mksap.by_section(mk_raw)
 cur = long[long.Exam_Year == cur_year]
 cw = names.match_mksap(cur, people)
 print("  tiers:", cw.tier.value_counts().to_dict(), "| MKSAP people:", len(people))
@@ -175,6 +176,24 @@ if "tiers" in T:
     for pgy, want in T["tiers"]["by_pgy"].items():
         check(f"PGY-{pgy} tiers", {k: int(ts.loc[int(pgy), k]) for k in want}, want)
     check("tier changes", board.change_summary(bt), T["tiers"]["change"])
+
+if "mksap_progress" in T:
+    print("\n== 4d. MKSAP progress")
+    tp = T["mksap_progress"]
+    pr = mksap.progress_by_pgy(w).set_index("PGY")
+    for pgy, want in tp["by_pgy"].items():
+        got = pr.loc[int(pgy)]
+        check(
+            f"PGY-{pgy} progress",
+            {k: (int(got[k]) if k in ("n", "med", "q1", "q3", "total") else float(got[k])) for k in want},
+            want,
+        )
+    bt_ = mksap.bins_table(w)
+    check("volume bins", {b: [int(bt_.loc[b, p]) for p in (1, 2, 3)] for b in tp["bins"]}, tp["bins"])
+    st = mksap.section_table(mk_sections, w)
+    for code, want in tp["sections"].items():
+        s = st[st.Subspecialty == code].sort_values("PGY")
+        check(f"section {code}", dict(bank=int(s.bank.iloc[0]), done=s.done.tolist(), acc=s.acc.tolist()), want)
 
 print("\n== 5. Program Performance Report")
 prog = pdf_reports.parse_program_pdf(one("*Program Report*.pdf", "program_report"))

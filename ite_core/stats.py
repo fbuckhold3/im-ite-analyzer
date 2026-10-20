@@ -11,6 +11,7 @@ import statsmodels.formula.api as smf
 from scipy import stats
 
 THIRDS = ["Lowest", "Middle", "Highest"]
+MIN_MODEL_N = 10  # fewer paired residents with MKSAP: skip the regressions
 
 
 def _year(w: pd.DataFrame, year: int | None) -> int:
@@ -77,7 +78,15 @@ def mksap_models(w: pd.DataFrame, year: int | None = None) -> dict:
       acc   : + MKSAP % correct
       both  : + log_ans + MKSAP % correct
     """
-    s = _analysis_frame(w, year).dropna(subset=["mk_answered"])
+    s = _analysis_frame(w, year)
+    s = s.dropna(subset=["mk_answered"]) if "mk_answered" in s else s.iloc[0:0]
+    if len(s) < MIN_MODEL_N:
+        return dict(
+            ok=False,
+            n=int(len(s)),
+            reason=f"{len(s)} residents have both years of ITE and MKSAP data; at least {MIN_MODEL_N} "
+            "are needed for a stable estimate.",
+        )
     fit = lambda f, d=s: smf.ols(f, d).fit()
     g0 = fit("pc_cur ~ pc_prev + C(PGY)")
     g1 = fit("pc_cur ~ pc_prev + C(PGY) + log_ans")
@@ -88,6 +97,7 @@ def mksap_models(w: pd.DataFrame, year: int | None = None) -> dict:
     h0 = fit("ile_cur ~ ile_prev + C(PGY)", il)
     h1 = fit("ile_cur ~ ile_prev + C(PGY) + log_ans", il)
     return dict(
+        ok=True,
         n=int(len(s)),
         n_acc=int(len(acc)),
         n_ile=int(len(il)),
@@ -111,6 +121,25 @@ def mksap_models(w: pd.DataFrame, year: int | None = None) -> dict:
         rho_q_pc_prev=_spear(s, "mk_answered", "pc_prev"),
         rho_acc_pc_cur=_spear(s, "mk_pct_correct", "pc_cur"),
     )
+
+
+def mksap_points(w: pd.DataFrame, year: int | None = None) -> pd.DataFrame:
+    """Residents with both ITE years and MKSAP: questions answered and ITE changes (for the scatter)."""
+    s = _analysis_frame(w, year)
+    if "mk_answered" not in s:
+        return pd.DataFrame(columns=["ID", "Name", "PGY", "mk_answered", "dPct_1yr", "dPctile_1yr"])
+    s = s.dropna(subset=["mk_answered"])
+    return s[["ID", "Name", "PGY", "mk_answered", "dPct_1yr", "dPctile_1yr"]].reset_index(drop=True)
+
+
+def trend_line(x: pd.Series, y: pd.Series, n: int = 50) -> tuple[np.ndarray, np.ndarray]:
+    """Least-squares line of y on log(1 + x), evaluated on a grid across x (for a log-x scatter)."""
+    ok = x.notna() & y.notna()
+    if ok.sum() < 3:
+        return np.array([]), np.array([])
+    b1, b0 = np.polyfit(np.log1p(x[ok]), y[ok], 1)
+    xs = np.exp(np.linspace(np.log1p(x[ok].min()), np.log1p(x[ok].max()), n)) - 1
+    return xs, b0 + b1 * np.log1p(xs)
 
 
 def mksap_thirds(w: pd.DataFrame, year: int | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:

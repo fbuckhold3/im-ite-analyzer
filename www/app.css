@@ -112,3 +112,6 @@ body { color: var(--ink); }
 
 .tier-table { max-width: 32rem; }
 .tier-table td { text-align: center; font-variant-numeric: tabular-nums; }
+
+.heat-table td { text-align: center; font-variant-numeric: tabular-nums; }
+.heat-table td .n { color: inherit; opacity: 0.85; }

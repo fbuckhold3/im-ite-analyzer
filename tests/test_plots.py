@@ -75,3 +75,20 @@ def test_figures_have_no_nan_for_widgets(data):
         plots.nomogram_figure(),
     ):
         _assert_strict_json(fig)
+
+
+def test_mksap_figures():
+
+    d = demo.make_demo()
+    r = S.load_rosters([S.Upload(n, b) for n, b in d["rosters"]])
+    m = S.load_mksap(S.Upload(*d["mksap"]))
+    w = S.build_wide(r, m, S.match(r, m))
+    by_pgy, pooled = stats.mksap_thirds(w)
+    for fig in (
+        plots.mksap_strip(w),
+        plots.thirds_bar(by_pgy, pooled, "pct"),
+        plots.thirds_bar(by_pgy, pooled, "ile"),
+        plots.mksap_scatter(stats.mksap_points(w), "pct"),
+        plots.mksap_scatter(stats.mksap_points(w), "ile"),
+    ):
+        _assert_strict_json(fig)

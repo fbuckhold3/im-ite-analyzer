@@ -69,6 +69,10 @@ curve reaches the Low-risk cutoff.
     with MKSAP accuracy and with percentile as the outcome.
   - Thirds of MKSAP volume within each PGY. Ties are broken by row order, so with tied counts the split can
     differ slightly between runs on reordered files.
+  - **Minimum sample**: the regressions are not run with fewer than 10 residents who have both ITE years and an
+    MKSAP account; results with p ≥ .05 are reported as not statistically clear.
+  - **Section table**: % attempted = questions answered ÷ (section size × residents in the class); accuracy =
+    correct ÷ answered. Section names are inferred from MKSAP's two-letter codes.
   - **Interpretation**: observational and confounded (motivation, rotations, prior knowledge), with small samples.
     The MKSAP snapshot may post-date the ITE, and MKSAP editions reset question counts.
 

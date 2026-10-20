@@ -116,7 +116,7 @@ gain % correct and lose percentile).
 1. ✅ `ite_core` + tests; validated against a private real-data analysis.
 2. ✅ Upload & Align tab with crosswalk export/import; quick-calculator tab; demo data; upload hardening.
 3. ✅ Resident self-analysis tab ("My ITE report"; moved up from step 6).
-4. ✅ Trends by level, Classes (trajectories + matrix), Year over year. 5. ✅ Board pass tab (ABIM estimates, watch list, resident drill-down). 6. MKSAP tab.
+4. ✅ Trends by level, Classes (trajectories + matrix), Year over year. 5. ✅ Board pass tab (ABIM estimates, watch list, resident drill-down). 6. ✅ MKSAP tab (progress, sections, MKSAP vs next ITE).
 7. Item gaps + report downloads. 8. PDF splitter + emailing manifest.
 
 ## 8. Open questions

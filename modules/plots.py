@@ -355,3 +355,128 @@ def program_nomogram(bt, cutoffs=nomogram.DEFAULT_CUTOFFS):
         )
     fig.update_layout(height=420, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
     return widget_safe(fig)
+
+
+# ------------------------------------------------------------------------------ MKSAP
+def mksap_strip(w):
+    """Questions answered per current PGY: every resident a dot, box = middle half. Log axis (0 shown at 1)."""
+    fig = go.Figure()
+    d = w[w.mk_answered.notna()]
+    for p in (1, 2, 3):
+        v = d[d.PGY == p]
+        if v.empty:
+            continue
+        fig.add_trace(
+            go.Box(
+                y=v.mk_answered.clip(lower=1),
+                name=f"PGY-{p}",
+                boxpoints="all",
+                jitter=0.45,
+                pointpos=0,
+                marker=dict(color=PGY_COLOR[p], size=7, line=dict(color="#1a1a1a", width=0.5)),
+                line=dict(color=PGY_COLOR[p]),
+                fillcolor="rgba(0,0,0,0)",
+                text=v.Name,
+                hovertemplate="%{text}: %{y:,.0f} questions<extra></extra>",
+                showlegend=False,
+            )
+        )
+    fig.update_layout(
+        height=340,
+        margin=dict(l=60, r=15, t=10, b=35),
+        template="plotly_white",
+        modebar=MODEBAR,
+        font=FONT,
+        yaxis=dict(title="Questions answered (log scale)", type="log", tickvals=[1, 10, 30, 100, 300, 1000, 3000]),
+    )
+    return widget_safe(fig)
+
+
+def thirds_bar(by_pgy, pooled, outcome: str = "pct"):
+    """Mean ITE change by MKSAP-volume third (within class): pooled and per PGY."""
+    col, label = ("dpc", "Mean change in ITE % correct") if outcome == "pct" else ("dile", "Mean change in percentile")
+    fig = go.Figure()
+    groups = [("All PGY-2/3", pooled, "#4d4d4d")] + [
+        (f"PGY-{p}", by_pgy[by_pgy.PGY == p], PGY_COLOR[p]) for p in (2, 3) if (by_pgy.PGY == p).any()
+    ]
+    for name, d, color in groups:
+        fig.add_trace(
+            go.Bar(
+                x=d.vol.astype(str),
+                y=d[col],
+                name=name,
+                marker_color=color,
+                customdata=d[["n", "q"]].values,
+                text=[f"{v:+.1f}" for v in d[col]],
+                textposition="outside",
+                hovertemplate=f"{name}, %{{x}} third: %{{y:+.1f}} (n=%{{customdata[0]}}, "
+                "median %{customdata[1]:.0f} questions)<extra></extra>",
+            )
+        )
+    fig.add_hline(y=0, line=dict(color="#9aa0a6", width=1))
+    fig.update_layout(
+        barmode="group",
+        height=340,
+        margin=dict(l=60, r=15, t=30, b=40),
+        template="plotly_white",
+        modebar=MODEBAR,
+        font=FONT,
+        yaxis=dict(title=label),
+        xaxis=dict(title="Third of MKSAP questions answered (within class)"),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    )
+    return widget_safe(fig)
+
+
+def mksap_scatter(pts, outcome: str = "pct"):
+    """Questions answered (log) vs ITE change, coloured by PGY, with a least-squares trend on log(1 + questions)."""
+    from ite_core.stats import trend_line
+
+    col, label = (
+        ("dPct_1yr", "Change in ITE % correct") if outcome == "pct" else ("dPctile_1yr", "Change in percentile")
+    )
+    fig = go.Figure()
+    for p in (2, 3):
+        d = pts[pts.PGY == p]
+        if d.empty:
+            continue
+        fig.add_trace(
+            go.Scatter(
+                x=d.mk_answered.clip(lower=1),
+                y=d[col],
+                mode="markers",
+                name=f"Now PGY-{p}",
+                text=d.Name,
+                marker=dict(
+                    size=10,
+                    color=PGY_COLOR[p],
+                    line=dict(color="#1a1a1a", width=0.8),
+                    symbol="circle" if p == 2 else "diamond",
+                ),
+                hovertemplate="%{text}: %{x:,.0f} questions, change %{y:+.0f}<extra></extra>",
+            )
+        )
+    xs, ys = trend_line(pts.mk_answered, pts[col])
+    if len(xs):
+        fig.add_trace(
+            go.Scatter(
+                x=xs.clip(min=1),
+                y=ys,
+                mode="lines",
+                name="Trend",
+                hoverinfo="skip",
+                line=dict(color="#4d4d4d", width=2, dash="dash"),
+            )
+        )
+    fig.add_hline(y=0, line=dict(color="#9aa0a6", width=1))
+    fig.update_layout(
+        height=380,
+        margin=dict(l=60, r=15, t=10, b=50),
+        template="plotly_white",
+        modebar=MODEBAR,
+        font=FONT,
+        xaxis=dict(title="MKSAP questions answered (log scale)", type="log", tickvals=[10, 30, 100, 300, 1000, 3000]),
+        yaxis=dict(title=label),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    )
+    return widget_safe(fig)

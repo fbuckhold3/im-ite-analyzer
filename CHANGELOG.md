@@ -5,6 +5,15 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 ### Added
+- **MKSAP** sub-tab: progress by class (median and IQR of questions answered, % of bank, accuracy; strip plot;
+  volume bins; section table of % attempted and accuracy by PGY) and MKSAP vs the next ITE for PGY-2/3
+  (plain-language headline from the adjusted regression, thirds-within-class chart, scatter with trend line,
+  Spearman correlations with a guarded interpretation, accuracy effect, caveats). Outcome toggle: % correct /
+  percentile. Regressions are skipped below 10 paired residents; non-significant results are labelled as such.
+- `mksap.progress_by_pgy`, `bins_table`, `section_table`; `stats.mksap_points`, `trend_line`, `MIN_MODEL_N`.
+
+### Changed
+- Demo MKSAP data is more realistic: interns answer far fewer questions and sections differ in popularity.
 - **Board pass** sub-tab: tier counts by PGY and tier changes since last year; nomogram with every current
   resident (click a dot, or use the picker, to open their year-by-year history and roster content-area
   percentiles); PGY-2/3 watch list (below Low risk or tier worsened, with points from the Low-risk score);

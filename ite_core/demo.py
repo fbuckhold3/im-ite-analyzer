@@ -134,7 +134,8 @@ def make_demo(seed: int = 7) -> dict:
     """{'rosters': [(filename, bytes), ...], 'mksap': (filename, bytes), 'people': DataFrame}."""
     rng = np.random.default_rng(seed)
     ppl = _people(rng)
-    q_answered = np.minimum(np.round(ppl.mk_rate), 1400).astype(int)
+    # interns (class of 2029 in the 2026 snapshot) have barely started the bank
+    q_answered = np.minimum(np.round(ppl.mk_rate * np.where(ppl.grad >= 2029, 0.12, 1.0)), 1400).astype(int)
     rosters = []
     for y in EXAM_YEARS:
         pgy = y + 4 - ppl.grad
@@ -163,6 +164,7 @@ def make_demo(seed: int = 7) -> dict:
     # MKSAP: current residents (grad >= 2027) except one, plus two graduates; small 16 x 50 bank
     sections = list(SECTION_NAMES)
     bank = [(s, 1000 * (k + 1) + n) for k, s in enumerate(sections) for n in range(50)]
+    section_weight = np.linspace(2.5, 0.4, len(sections))[rng.permutation(len(sections))]
     accounts = ppl[ppl.grad >= 2027].iloc[1:].copy()  # first current resident has no MKSAP account
     accounts = pd.concat([accounts, ppl[ppl.grad == 2026].head(2)])  # graduates still in MKSAP
     rows = []
@@ -174,7 +176,10 @@ def make_demo(seed: int = 7) -> dict:
             last = last.upper()  # all-caps
         last = last.replace("-", " ")  # hyphen dropped in MKSAP
         n_ans = min(len(bank), int(q_answered[idx] * len(bank) / 3156 * 4))
-        answered = set(rng.choice(len(bank), size=n_ans, replace=False)) if n_ans else set()
+        sec_pref = np.repeat(section_weight, 50)  # some sections are far more popular than others
+        answered = (
+            set(rng.choice(len(bank), size=n_ans, replace=False, p=sec_pref / sec_pref.sum())) if n_ans else set()
+        )
         acc = norm.cdf(0.4 + 0.5 * p.ability)
         for j, (sec, qn) in enumerate(bank):
             a = j in answered

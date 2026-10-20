@@ -88,3 +88,53 @@ def by_section(m: pd.DataFrame) -> pd.DataFrame:
 
 def volume_bin(answered: pd.Series) -> pd.Series:
     return pd.cut(answered, VOLUME_BINS, right=False, labels=VOLUME_LABELS)
+
+
+# ------------------------------------------------------------------ program progress (needs wide + mk_* columns)
+def _with_mksap(w: pd.DataFrame) -> pd.DataFrame:
+    return w[w.mk_answered.notna()] if "mk_answered" in w else w.iloc[0:0]
+
+
+def progress_by_pgy(w: pd.DataFrame) -> pd.DataFrame:
+    """Per current PGY: n, median (IQR) questions answered, mean, % of bank at the median, pooled accuracy,
+    median personal accuracy, total questions."""
+    d = _with_mksap(w)
+    rows = []
+    for p, v in d.groupby("PGY"):
+        a = v.mk_answered
+        bank = v.mk_bank.max()
+        rows.append(
+            dict(
+                PGY=int(p),
+                n=int(len(v)),
+                med=float(a.median()),
+                q1=float(a.quantile(0.25)),
+                q3=float(a.quantile(0.75)),
+                mean=float(a.mean()),
+                bank_pct=round(100 * a.median() / bank, 1) if bank else np.nan,
+                acc=round(100 * v.mk_correct.sum() / max(1, a.sum()), 1),
+                acc_med=round(v.mk_pct_correct.median(), 1),
+                total=int(a.sum()),
+            )
+        )
+    return pd.DataFrame(rows)
+
+
+def bins_table(w: pd.DataFrame) -> pd.DataFrame:
+    """Rows = volume bins (Under 100 ... 1,000+), columns = PGY, values = resident counts."""
+    d = _with_mksap(w)
+    t = pd.crosstab(volume_bin(d.mk_answered), d.PGY)
+    return t.reindex(VOLUME_LABELS).fillna(0).astype(int)
+
+
+def section_table(sections: pd.DataFrame, w: pd.DataFrame) -> pd.DataFrame:
+    """Per MKSAP section x current PGY: % of the section attempted (answered / (section size x residents)) and
+    accuracy (correct / answered). Uses only accounts linked to a current resident (w.mk_key)."""
+    d = _with_mksap(w)
+    s = sections.merge(d[["mk_key", "PGY"]], on="mk_key")
+    g = s.groupby(["Subspecialty", "PGY"]).agg(a=("a", "sum"), c=("c", "sum"), n=("n", "sum"), bank=("n", "first"))
+    g = g.reset_index()
+    g["done"] = (100 * g.a / g.n).round(1)
+    g["acc"] = (100 * g.c / g.a).where(g.a > 0).round(1)
+    g["name"] = g.Subspecialty.map(SECTION_NAMES).fillna(g.Subspecialty)
+    return g.sort_values(["bank", "Subspecialty", "PGY"], ascending=[False, True, True]).reset_index(drop=True)
