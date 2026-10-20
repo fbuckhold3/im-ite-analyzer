@@ -11,7 +11,7 @@ Private, machine-local notes (if present): `CLAUDE.local.md`.
 3. **Resident self-analysis** — upload own Examinee Performance Report PDF → pass estimate,
    strengths / focus areas, missed objectives by area.
 4. **MKSAP** — PD adds the program's MKSAP Digital export (members overview or full detail; residents
-   cannot export their own) → progress + MKSAP-vs-ITE analysis. Export steps: docs/MKSAP_EXPORT.md (TODO: exact clicks).
+   cannot export their own) → progress + MKSAP-vs-ITE analysis. Export steps: docs/MKSAP_EXPORT.md (MKSAP Tracker → Members → Export Overview / Export Details).
 
 ## Layout
 - `ite_core/` pure functions, no Shiny, no disk writes: `nomogram`, `roster`, `names`, `mksap`,

@@ -17,13 +17,12 @@ comparable within one export type. Totals per person and every ITE analysis agre
 
 ## Steps
 
-> TODO: exact MKSAP Digital program-administrator steps (where to log in, which page, which button) —
-> to be added by the author once confirmed.
-
-1. Sign in to MKSAP Digital with your program-administrator account.
-2. Open your program's member / group view.
-3. Download the **members overview** (or the full detail) as **.csv**.
-4. Upload the file unchanged on **Program data → Upload & Align**.
+1. Sign in to MKSAP with your program-administrator account and open the **MKSAP Tracker**.
+2. Go to the **Members** page.
+3. At the bottom of the page there are three buttons: **Export Overview**, **Export Details** and Print Page.
+   - **Export Overview** → the members overview (recommended).
+   - **Export Details** → the full detail (adds section coverage).
+4. Upload the downloaded .csv unchanged on **Program data → Upload & Align**, in the MKSAP box.
 
 ## Tips
 

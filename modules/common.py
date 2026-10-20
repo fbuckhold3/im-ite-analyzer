@@ -83,24 +83,26 @@ def privacy_note():
 
 
 def mksap_howto():
-    """How a program gets its MKSAP export. TODO(Fred): replace the generic steps with the exact MKSAP Digital
-    program-administrator clicks once confirmed (also in docs/MKSAP_EXPORT.md)."""
+    """How a program gets its MKSAP export (kept in step with docs/MKSAP_EXPORT.md)."""
     return ui.tags.details(
         ui.tags.summary("How to get your program's MKSAP export"),
         ui.p(
-            "MKSAP Digital exports are available to program administrators, not to individual residents. "
-            "In MKSAP Digital's program (group) administration view, download either export as a .csv:"
+            "MKSAP exports are available to program administrators, not to individual residents. In the ",
+            ui.strong("MKSAP Tracker"),
+            ", open the ",
+            ui.strong("Members"),
+            " page. The export buttons are at the bottom of the page:",
         ),
         ui.tags.ul(
             ui.tags.li(
-                ui.strong("Members overview"),
+                ui.strong("Export Overview"),
                 " — one row per person (questions completed and correct). "
                 "Recommended: small, and enough for every analysis except section coverage.",
             ),
-            ui.tags.li(ui.strong("Full detail"), " — one row per person and question. Adds section coverage."),
+            ui.tags.li(ui.strong("Export Details"), " — one row per person and question. Adds section coverage."),
         ),
         ui.p(
-            "Upload the file as exported — don't edit or re-save it. Residents who have graduated or left will "
+            "Upload the downloaded .csv as is — don't edit or re-save it. Residents who have graduated or left will "
             "appear as unmatched accounts; that's expected.",
             class_="hint",
         ),

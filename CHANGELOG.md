@@ -7,7 +7,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 ### Added
 - MKSAP **members overview** export accepted alongside the full detail export (detected from the columns);
   every analysis works with either except section coverage, which needs the full detail. Upload & Align shows
-  the export type and bank size; "How to get your program's MKSAP export" help and `docs/MKSAP_EXPORT.md`.
+  the export type and bank size; "How to get your program's MKSAP export" help and `docs/MKSAP_EXPORT.md`
+  (MKSAP Tracker → Members → Export Overview / Export Details).
 
 ### Changed
 - MKSAP is program-level only: residents cannot export their own MKSAP data, so the MKSAP upload, sample file
