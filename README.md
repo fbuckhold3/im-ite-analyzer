@@ -14,7 +14,7 @@ use, for internal medicine residents and program directors.
 |---|---|---|
 | Anyone | nothing — type a % correct and PGY (or all three years) | Estimated probability of passing ABIM, risk tier, the score needed for low risk |
 | Residents | your ACP Examinee Performance Report (PDF) | Pass estimate, strengths and focus areas, missed objectives by content area, trajectory across years |
-| Program directors | ACP roster files (any years), Program Performance Report, MKSAP program export ([how to get it](docs/MKSAP_EXPORT.md)) | Trends by PGY level and class, same-resident change, pass estimates, MKSAP-vs-ITE analysis, item-level gaps, reports |
+| Program directors | ACP roster files (any years), Program Performance Report, MKSAP program export ([how to get it](docs/MKSAP_EXPORT.md)) | Trends by PGY level and class, same-resident change, pass estimates, MKSAP-vs-ITE analysis, item-level gaps, HTML reports, and all data in one Excel workbook |
 
 Status: **in development** — the Calculator, My ITE report (resident self-analysis) and Program data →
 Upload & Align, Trends by level, Classes, Year over year, Board pass, MKSAP, Item gaps and Reports tabs

@@ -21,7 +21,7 @@ Private, machine-local notes (if present): `CLAUDE.local.md`.
 - `scripts/check_no_data.py` blocks data files / emails from commits (pre-commit + CI).
 - `app.py` page_navbar + footer; `modules/` one Shiny module per tab (`calculator`, `resident`, `upload_align`) plus `program_tabs.py`
   (Trends / Classes / Year-over-year sub-tabs under Program data), `board.py` (Board pass sub-tab), `mksap_tab.py` (MKSAP sub-tab), `items_tab.py` (Item gaps), `reports_tab.py` + `report_builder.py`
-  (HTML report downloads; builder is pure but lives in modules/ because it reuses plots), `common.py` (badges, citation, footer) and `plots.py` (plotly builders, updated in place via shinywidgets).
+  (HTML report downloads) + `data_export.py` (combined .xlsx; builder is pure but lives in modules/ because it reuses plots), `common.py` (badges, citation, footer) and `plots.py` (plotly builders, updated in place via shinywidgets).
 - `upload_server()` returns a reactive `session.Dataset` (rosters, mksap, crosswalk, wide) — later tabs read it.
 - `ite_core/session.py` assembles uploads (pure); `ite_core/limits.py` caps + `UploadError`; `ite_core/demo.py` invented data.
 

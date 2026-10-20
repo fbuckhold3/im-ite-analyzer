@@ -94,6 +94,9 @@ one resident moves a single-PGY percentage by several points, so treat flags as 
   count is under 5. Residual risk: unlabeled scatter points can still be recognised by someone who knows an
   individual's scores — review before sharing outside the program.
 
+- **All data (.xlsx)**: every table the app computes, row-level and identified; never offered de-identified,
+  because resident-level rows can be re-identified even without names.
+
 ## 6. Resident self-analysis (`individual.py`)
 Content areas are ranked by the resident's percentile (not % correct, since area difficulty differs).
 Strength ≥ 60th percentile; Focus < 35th, or the two weakest areas if none fall below 35th. Missed objectives

@@ -5,6 +5,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 ### Added
+- **Download all data (.xlsx)** on the Reports tab: one identified workbook with a Read me sheet plus Residents,
+  ITE by exam (every resident × exam year with content areas and graduating class), By PGY level, By class,
+  Year over year (+ summary), MKSAP (+ sections for the full detail export), Crosswalk, Item gaps and Area ranks —
+  each included only when its data was uploaded. `modules/data_export.py`.
 - **Item gaps** sub-tab from the ACP Program Performance Report (new optional PDF upload on Upload & Align):
   content-area percentile ranks among programs by PGY group, red/yellow item flags with adjustable cutoffs, a
   filterable item table, flagged-items CSV and all-items Excel downloads. Invented sample report in the demo.

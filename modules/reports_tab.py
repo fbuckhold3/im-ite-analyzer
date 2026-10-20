@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from shiny import module, reactive, render, ui
 
-from . import report_builder
+from . import data_export, report_builder
 from .common import message
 
 LOW_CUTOFFS = {"0.90": "90% (default)", "0.80": "80%", "0.75": "75%"}
@@ -21,6 +21,16 @@ def reports_ui():
             ),
             ui.div("Confidential: contains resident-identifiable education records.", class_="msg msg-error"),
             ui.download_button("identified", "Download PD report (.html)", class_="btn-primary"),
+            ui.hr(),
+            ui.p(
+                ui.strong("All data (.xlsx)"),
+                " — every table the app computes in one workbook (residents, every "
+                "exam with content areas, by level, by class, year over year, MKSAP, item gaps, crosswalk) for your "
+                "own analysis or records. Also identified.",
+                class_="hint",
+            ),
+            ui.output_ui("sheets"),
+            ui.download_button("workbook", "Download all data (.xlsx)", class_="btn-outline-primary"),
         ),
         ui.card(
             ui.card_header("De-identified program summary"),
@@ -76,6 +86,19 @@ def reports_server(input, output, session, dataset, program):
     def identified():
         if sections():
             yield report_builder.build_report(dataset(), program(), deidentified=False, cutoffs=cutoffs())
+
+    @render.ui
+    def sheets():
+        s = data_export.included_sheets(dataset(), program())
+        return ui.p("Sheets: " + ", ".join(s) + ".", class_="hint") if s else None
+
+    @render.download_button(
+        filename=lambda: _name("all_data_CONFIDENTIAL").replace(".html", ".xlsx"),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    def workbook():
+        if sections():
+            yield data_export.build_workbook(dataset(), program(), cutoffs=cutoffs())
 
     @render.download_button(filename=lambda: _name("program_summary"), media_type="text/html")
     def deidentified():

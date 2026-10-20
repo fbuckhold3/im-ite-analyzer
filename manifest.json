@@ -85,6 +85,9 @@
     "modules/common.py": {
       "checksum": "b1783081f0c27c7e75e0d4a6154c49f1"
     },
+    "modules/data_export.py": {
+      "checksum": "d682d64c5fec9c80cc16699eaa3efab7"
+    },
     "modules/items_tab.py": {
       "checksum": "4a9a23bf0a0b71f7e3fb20b52f50f9cf"
     },
@@ -101,7 +104,7 @@
       "checksum": "88fc10241ffe4939fe1846e45ef6892b"
     },
     "modules/reports_tab.py": {
-      "checksum": "e6a82fe6c544a008ddaee4d6200d8195"
+      "checksum": "0aa5f8a9a6ce23effea9c59223bba6fa"
     },
     "modules/resident.py": {
       "checksum": "d46fdbe04f39bf63c30a495e277f6122"
