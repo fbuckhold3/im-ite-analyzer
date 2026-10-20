@@ -13,6 +13,9 @@ versions follow [Semantic Versioning](https://semver.org/).
   suppressed, with complementary suppression so hidden counts can't be recovered by subtraction; unlabeled
   points). `modules/report_builder.py`.
 
+### Changed
+- Scope: the app is an analyzer only; splitting score reports and emailing residents are out of scope.
+
 ### Security
 - Removed Plotly's "Share chart" (Plotly Cloud upload) and Chart Studio buttons from every chart in the app and
   the reports, so resident data can't be uploaded to a third party from a chart toolbar.

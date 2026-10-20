@@ -31,7 +31,6 @@ belong in separate, opt-in modules.
 | MKSAP Digital detail export | .csv (~350k rows for a program) | Columns: `Last Name, First Name, Subspecialty, Question Number, Answered?, Correct?` (Y/N). One row per person × item. Question numbers repeat within a subspecialty (different items) — count rows, don't dedupe on number. Every person carries the full bank (3,156 items in the 2026 edition). Includes graduates/faculty → many legitimately unmatched. Name case varies. |
 | ACP Examinee Performance Report | .pdf | Single resident (~4 pages) or the composite of all residents; split on `Candidate ID:`. Page 1: total % correct, percentile, PGY, content-area table (yours / national mean / SD / percentile). Later pages: missed objectives by area; `**` = High Value Care. |
 | ACP Program Performance Report | .pdf | p.2 content-area table (all-programs mean, program mean, program %ile rank per PGY group); then every item with national vs program % correct per PGY. |
-| (optional) Email roster | .csv/.xlsx | Name + email; for the emailing manifest. |
 | (optional) Crosswalk from a prior session | .csv | Re-upload to skip re-confirming matches. |
 
 National PGY means (from the ACP histograms) are not in the roster — allow optional manual entry per
@@ -96,8 +95,6 @@ and other MKSAP-only accounts listed as unmatched.
     - Identified PD report (self-contained HTML).
     - De-identified program summary (aggregates only, unlabeled dots, no per-person risk). Suppress any
       cell with n<5.
-    - Individual PDF splitter + emailing manifest (.xlsx with an Excel table named `Reports`) for a
-      Power Automate flow (manifest columns CandidateID, Name, FirstName, PGY, FileName, Email, Send, SentOn).
 
 Every tab and report opens with a "How to read these numbers" box: % correct (share of items right;
 depends on exam difficulty; rises with PGY — national ≈60/67/70% in 2026; drives the ABIM estimate) vs
@@ -117,7 +114,10 @@ gain % correct and lose percentile).
 2. ✅ Upload & Align tab with crosswalk export/import; quick-calculator tab; demo data; upload hardening.
 3. ✅ Resident self-analysis tab ("My ITE report"; moved up from step 6).
 4. ✅ Trends by level, Classes (trajectories + matrix), Year over year. 5. ✅ Board pass tab (ABIM estimates, watch list, resident drill-down). 6. ✅ MKSAP tab (progress, sections, MKSAP vs next ITE).
-7. ✅ Item gaps + report downloads (annotated-PDF copy skipped: PyMuPDF is AGPL). 8. PDF splitter + emailing manifest.
+7. ✅ Item gaps + report downloads (annotated-PDF copy skipped: PyMuPDF is AGPL).
+
+**Out of scope (decided 2026-10-20):** splitting the composite score-report PDF and emailing residents their
+reports. im-ite-analyzer is an analyzer only; it never sends email or prepares mailings.
 
 ## 8. Open questions
 - One program per session, or allow comparing programs?

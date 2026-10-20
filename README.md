@@ -18,7 +18,7 @@ use, for internal medicine residents and program directors.
 
 Status: **in development** — the Calculator, My ITE report (resident self-analysis) and Program data →
 Upload & Align, Trends by level, Classes, Year over year, Board pass, MKSAP, Item gaps and Reports tabs
-work; the score-report PDF splitter and email manifest are next.
+work. The app is an analyzer only — it does not split score reports or email residents.
 See [docs/REVISION_SPEC.md](docs/REVISION_SPEC.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## How the pass estimate works
