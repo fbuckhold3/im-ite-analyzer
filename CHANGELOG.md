@@ -5,6 +5,17 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 ### Added
+- **Board pass** sub-tab: tier counts by PGY and tier changes since last year; nomogram with every current
+  resident (click a dot, or use the picker, to open their year-by-year history and roster content-area
+  percentiles); PGY-2/3 watch list (below Low risk or tier worsened, with points from the Low-risk score);
+  sortable table of all residents (% correct, percentile, estimates, tier, change, MKSAP) with CSV download;
+  adjustable Low-risk cutoff for the tab.
+- `ite_core.board`: `board_table`, `tier_summary`, `change_summary`, `watch_list`, `resident_history`,
+  `resident_areas`.
+
+### Fixed
+- Charts with missing values (e.g. roster area data without national means) no longer disconnect the session:
+  every figure is cleaned of NaN before it is sent to the browser (`plots.widget_safe`).
 - **Program data** sub-tabs reading the uploaded rosters:
   - **Trends by level** — PGY-1/2/3 small multiples across exam years with a metric toggle (mean/median
     percentile, % ≥50th, % <35th, mean % correct, % Low risk) and a value (n) table; groups under 5 hatched

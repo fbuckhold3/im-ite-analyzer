@@ -14,6 +14,28 @@ POINTS_TRACE = 3  # index of the "your scores" trace
 MODEBAR = dict(orientation="v", bgcolor="rgba(255,255,255,0.7)")
 
 
+def widget_safe(fig):
+    """Replace NaN/inf with None in every trace array. shinywidgets serializes with strict JSON, and a single NaN
+    raises inside the session and disconnects the visitor."""
+    import math
+
+    import numpy as np
+
+    def clean(v):
+        if isinstance(v, (list, tuple, np.ndarray)):
+            return [clean(x) for x in v]
+        if isinstance(v, (float, np.floating)) and not math.isfinite(float(v)):
+            return None
+        return v.item() if isinstance(v, np.generic) else v
+
+    for tr in fig.data:
+        for attr in ("x", "y", "customdata", "text"):
+            val = getattr(tr, attr, None)
+            if val is not None and not isinstance(val, str):
+                setattr(tr, attr, clean(val))
+    return fig
+
+
 def nomogram_figure(cutoffs=nomogram.DEFAULT_CUTOFFS) -> go.Figure:
     c = nomogram.curves(step=0.5, lo=30, hi=95)
     fig = go.Figure()
@@ -53,7 +75,7 @@ def nomogram_figure(cutoffs=nomogram.DEFAULT_CUTOFFS) -> go.Figure:
         font=dict(family="system-ui, -apple-system, Segoe UI, sans-serif", size=13),
     )
     set_bands(fig, cutoffs)
-    return fig
+    return widget_safe(fig)
 
 
 def set_bands(fig, cutoffs) -> None:
@@ -113,8 +135,11 @@ def area_percentile_figure(areas, strength_at: int = 60, focus_below: int = 35) 
                     symbol={"Focus": "triangle-down", "Typical": "circle", "Strength": "triangle-up"}[standing],
                 ),
                 customdata=s[["pct_correct", "national_mean"]].values,
-                hovertemplate="%{y}: %{x}th percentile<br>You %{customdata[0]}% vs national mean "
-                "%{customdata[1]}%<extra></extra>",
+                hovertemplate=(
+                    "%{y}: %{x}th percentile<br>You %{customdata[0]}% vs national mean %{customdata[1]}%<extra></extra>"
+                    if s.national_mean.notna().any()
+                    else "%{y}: %{x}th percentile<br>You %{customdata[0]}% correct<extra></extra>"
+                ),
             )
         )
     for x, label in ((focus_below, f"{focus_below}th"), (50, "50th"), (strength_at, f"{strength_at}th")):
@@ -135,7 +160,7 @@ def area_percentile_figure(areas, strength_at: int = 60, focus_below: int = 35) 
         legend=dict(orientation="h", yanchor="bottom", y=1.04, xanchor="right", x=1),
         font=dict(family="system-ui, -apple-system, Segoe UI, sans-serif", size=13),
     )
-    return fig
+    return widget_safe(fig)
 
 
 # ------------------------------------------------------------------ program trends
@@ -196,7 +221,7 @@ def level_small_multiples(lv, metric: str = "ile"):
         font=FONT,
         bargap=0.25,
     )
-    return fig
+    return widget_safe(fig)
 
 
 def class_trajectories_figure(t, value_label: str = "Mean percentile"):
@@ -244,7 +269,7 @@ def class_trajectories_figure(t, value_label: str = "Mean percentile"):
         yaxis=dict(title=value_label),
         legend=dict(title="Solid = current, dashed = graduated"),
     )
-    return fig
+    return widget_safe(fig)
 
 
 def yoy_scatter(pts, outcome: str = "percentile"):
@@ -301,4 +326,32 @@ def yoy_scatter(pts, outcome: str = "percentile"):
         yaxis=dict(title=f"This year's {lab}", range=[lo, hi]),
         legend=dict(orientation="h", yanchor="bottom", y=0.01, xanchor="right", x=0.99),
     )
-    return fig
+    return widget_safe(fig)
+
+
+def program_nomogram(bt, cutoffs=nomogram.DEFAULT_CUTOFFS):
+    """The three curves plus one dot per current resident (trace per PGY; customdata = resident ID).
+    Traces from index POINTS_TRACE + 1 on are resident traces (click targets)."""
+    cy = bt.attrs["current_year"]
+    fig = nomogram_figure(cutoffs)
+    for p in (1, 2, 3):
+        d = bt[(bt.PGY == p) & bt[f"Pct_{cy}"].notna()]
+        fig.add_trace(
+            go.Scatter(
+                x=d[f"Pct_{cy}"],
+                y=d[f"Prob_{cy}"],
+                mode="markers",
+                name=f"PGY-{p} residents",
+                marker=dict(
+                    size=10,
+                    color=PGY_COLOR[p],
+                    line=dict(color="#1a1a1a", width=0.8),
+                    symbol={1: "circle", 2: "square", 3: "diamond"}[p],
+                ),
+                customdata=d.ID.values,
+                text=d.Name,
+                hovertemplate="%{text}<br>%{x:.0f}% correct → %{y:.1%}<br><i>click for details</i><extra></extra>",
+            )
+        )
+    fig.update_layout(height=420, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+    return widget_safe(fig)

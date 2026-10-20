@@ -109,3 +109,6 @@ body { color: var(--ink); }
 .data-table td.small { opacity: 0.6; }
 .small-flag { font-size: 0.72rem; font-weight: 600; color: var(--mid); margin-left: 0.25rem; }
 .yoy-card { border: 1px solid var(--rule); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 0.75rem; }
+
+.tier-table { max-width: 32rem; }
+.tier-table td { text-align: center; font-variant-numeric: tabular-nums; }

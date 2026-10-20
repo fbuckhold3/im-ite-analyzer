@@ -36,6 +36,11 @@ PGY values above 3 use the PGY-3 curve.
 Because each PGY curve is steeper than the last, the same % correct gives a lower probability later in
 training, so a tier can worsen with an unchanged score. The app shows the percentile alongside to make this clear.
 
+**Watch list (Board pass tab).** PGY-2 and PGY-3 residents whose current estimate is below the Low-risk cutoff,
+or whose tier worsened since the prior exam year. PGY-1s are excluded because the PGY-1 curve places almost
+everyone in Low risk. "Points from Low risk" = current % correct minus the % correct at which the resident's PGY
+curve reaches the Low-risk cutoff.
+
 ## 2. Percent correct vs percentile
 - **% correct**: share of exam items answered correctly. It depends on that year's exam difficulty and rises
   with training. It drives the ABIM estimate.

@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from ite_core import history, individual, mksap, names, pdf_reports, roster, stats  # noqa: E402
+from ite_core import board, history, individual, mksap, names, pdf_reports, roster, stats  # noqa: E402
 
 TARGET_KEYS = [
     "n_matched",
@@ -167,6 +167,14 @@ for pgy, want in T.get("yoy", {}).items():
     check(f"PGY-{pgy} mean percentile change", pc["d_ile"], want["d_ile"], 0.05)
     check(f"PGY-{pgy} Wilcoxon p", pc["p"], want["p"], 0.0005)
     check(f"PGY-{pgy} mean % correct change", pc["d_pc"], want["d_pc"], 0.05)
+
+if "tiers" in T:
+    print("\n== 4c. Board-pass tiers (default cutoffs)")
+    bt = board.board_table(w)
+    ts = board.tier_summary(bt)
+    for pgy, want in T["tiers"]["by_pgy"].items():
+        check(f"PGY-{pgy} tiers", {k: int(ts.loc[int(pgy), k]) for k in want}, want)
+    check("tier changes", board.change_summary(bt), T["tiers"]["change"])
 
 print("\n== 5. Program Performance Report")
 prog = pdf_reports.parse_program_pdf(one("*Program Report*.pdf", "program_report"))

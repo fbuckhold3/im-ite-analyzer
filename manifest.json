@@ -32,10 +32,13 @@
       "checksum": "316e5466344483b3ca9a37a55601af05"
     },
     "app.py": {
-      "checksum": "11b7f203407805fb9ea7ccb50994a965"
+      "checksum": "0984d9f3593d2cf8812ec21c5d1b6a6f"
     },
     "ite_core/__init__.py": {
       "checksum": "83e584a570d0635ebdfff0bfc14b1b5d"
+    },
+    "ite_core/board.py": {
+      "checksum": "e325c2fa4a87b3e002069cf4a5352515"
     },
     "ite_core/demo.py": {
       "checksum": "8ac2f32cc9d40957b0c154eca05f6f12"
@@ -73,6 +76,9 @@
     "modules/__init__.py": {
       "checksum": "3a6e24150172b26ddfd150f6f2637c96"
     },
+    "modules/board.py": {
+      "checksum": "d049589aaf6650fdfa4e98a69aa3d85c"
+    },
     "modules/calculator.py": {
       "checksum": "667aaa220d809514bbf935ea436a21dc"
     },
@@ -80,7 +86,7 @@
       "checksum": "b34945c088127c04120b7a0acecb019f"
     },
     "modules/plots.py": {
-      "checksum": "33f34b6b3686213bbdf2753cf8ceaf65"
+      "checksum": "8036fc6a3f03ac4c8cda192e024ae76d"
     },
     "modules/program_tabs.py": {
       "checksum": "8c7d7040c8cb99eae31914c1f7926db2"
@@ -92,7 +98,7 @@
       "checksum": "280d5635e6725ca0e3bc91da165e2f4e"
     },
     "www/app.css": {
-      "checksum": "a197cd7ca95631f1296ea5bf1bef7f17"
+      "checksum": "6c5eb36a193667e5627eccdc5f989bbf"
     }
   }
 }

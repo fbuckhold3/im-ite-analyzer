@@ -17,7 +17,7 @@ use, for internal medicine residents and program directors.
 | Program directors | ACP roster files (any years), Program Performance Report, MKSAP export | Trends by PGY level and class, same-resident change, pass estimates, MKSAP-vs-ITE analysis, item-level gaps, reports |
 
 Status: **in development** — the Calculator, My ITE report (resident self-analysis) and Program data →
-Upload & Align, Trends by level, Classes and Year over year tabs work; ABIM, MKSAP, item gaps and
+Upload & Align, Trends by level, Classes, Year over year and Board pass tabs work; MKSAP, item gaps and
 reports are next.
 See [docs/REVISION_SPEC.md](docs/REVISION_SPEC.md) and [CHANGELOG.md](CHANGELOG.md).
 

@@ -46,3 +46,32 @@ def test_yoy_scatter(data, outcome):
     _, w = data
     fig = plots.yoy_scatter(stats.paired_points(w), outcome)
     assert {t.name for t in fig.data if t.name} == {"Now PGY-2", "Now PGY-3"}
+
+
+def _assert_strict_json(fig):
+    import json
+
+    for tr in fig.data:
+        for attr in ("x", "y", "customdata", "text"):
+            v = getattr(tr, attr, None)
+            if v is not None and not isinstance(v, str):
+                json.dumps(list(v) if not isinstance(v, list) else v, allow_nan=False, default=str)
+
+
+def test_figures_have_no_nan_for_widgets(data):
+    """A NaN anywhere in widget data disconnects the session (strict JSON in shinywidgets)."""
+    from ite_core import board
+
+    long, w = data
+    rid = w.ID.iloc[0]
+    areas = board.resident_areas(long, rid)  # national_mean is NaN for roster data
+    lv = history.by_level(long[long.Exam_Year != 2025])  # gaps -> NaN bars
+    for fig in (
+        plots.area_percentile_figure(areas),
+        plots.level_small_multiples(lv, "ile"),
+        plots.class_trajectories_figure(history.class_trajectories(long)),
+        plots.program_nomogram(board.board_table(w)),
+        plots.yoy_scatter(stats.paired_points(w)),
+        plots.nomogram_figure(),
+    ):
+        _assert_strict_json(fig)
