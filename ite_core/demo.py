@@ -183,3 +183,98 @@ def make_demo(seed: int = 7) -> dict:
         rows, columns=["Last Name", "First Name", "Subspecialty", "Question Number", "Answered?", "Correct?"]
     )
     return dict(rosters=rosters, mksap=("MKSAP detail DEMO.csv", mk.to_csv(index=False).encode()), people=ppl)
+
+
+# ------------------------------------------------------------------ sample resident report
+_SAMPLE_AREAS = {  # area: (2025 your%, 2026 your%, national mean, sd)  — invented
+    "Cardiology": (61, 70, 66, 11),
+    "Endocrinology": (55, 60, 68, 12),
+    "Gastroenterology": (63, 71, 64, 13),
+    "General Internal Medicine": (70, 78, 67, 10),
+    "Geriatric Medicine": (64, 72, 67, 14),
+    "Hematology/Oncology": (58, 66, 65, 11),
+    "Infectious Diseases": (50, 57, 64, 13),
+    "Nephrology": (49, 58, 58, 15),
+    "Neurology": (52, 61, 64, 16),
+    "Pulmonary and Critical Care Medicine": (60, 69, 65, 11),
+    "Rheumatology": (68, 77, 69, 12),
+    "High Value Care": (62, 70, 67, 11),
+}
+_SAMPLE_MISSED = {  # invented, generic objectives
+    "Cardiology": [
+        "Manage an invented rhythm disturbance.",
+        "Choose therapy for a fictional valve lesion in an older patient with several competing risks.",
+    ],
+    "Endocrinology": [
+        "Evaluate a made-up adrenal finding.",
+        "Adjust an imaginary insulin regimen.**",
+        "Recognize a fictional thyroid emergency.",
+    ],
+    "Infectious Diseases": [
+        "Select antibiotics for an invented infection.",
+        "Prevent a pretend outbreak.**",
+        "Diagnose a fictional fever syndrome.",
+        "Treat an imaginary resistant organism.",
+    ],
+    "Nephrology": ["Correct a made-up electrolyte problem.", "Evaluate an invented kidney injury."],
+    "Neurology": ["Manage a fictional headache syndrome.", "Diagnose an invented neuropathy."],
+}
+
+
+def _sample_pages(year: int, pgy: int, idx: int, pct: int, ile: int) -> list[str]:
+    head = (
+        f"                    {year} Internal Medicine In-Training Examination\n"
+        "                              Examinee Performance Report\n\n"
+        "Name:    Sample, Alex\nCandidate ID:     900999\nProgram ID:     100000\n"
+    )
+    rows = []
+    for area, v in _SAMPLE_AREAS.items():
+        mine, nat, sd = v[idx], v[2] + (5 if idx == 1 else -2), v[3]
+        pctile = int(round(100 * norm.cdf((mine - nat) / sd)))
+        label = area + ("**" if area == "High Value Care" else "")
+        rows.append(f"          {label:<50}{mine:>6}{nat:>16}{sd:>16}{pctile:>14}")
+    p1 = (
+        head + f"\n          Total Test Percent Correct Score           {pct}%\n"
+        f"          Percentile Rank by PGY Level                {ile}\n"
+        f"          PGY Level                                    {pgy}\n\n" + "\n".join(rows) + "\n\nEEID:900999$$\n"
+    )
+    missed = []
+    for area, objs in _SAMPLE_MISSED.items():
+        missed.append(area)
+        for o in objs[: len(objs) - (1 if idx == 1 and len(objs) > 2 else 0)]:
+            if len(o) > 70:  # wrap long objectives the way ACP's layout does
+                cut = o.rfind(" ", 0, 70)
+                missed += [o[:cut], o[cut + 1 :]]
+            else:
+                missed.append(o)
+    p2 = head + "\n" + "\n".join(missed) + "\n\nEEID:900999$$\n"
+    return [p1, p2]
+
+
+def sample_examinee_reports() -> list[dict]:
+    """An invented resident's reports for two years (PGY-1 2025, PGY-2 2026), already parsed."""
+    from .pdf_reports import parse_examinee_text
+
+    return parse_examinee_text(_sample_pages(2025, 1, 0, 59, 45) + _sample_pages(2026, 2, 1, 67, 50))
+
+
+def sample_mksap_csv() -> bytes:
+    """An invented resident's own MKSAP export (same columns as the program export, one account)."""
+    rng = np.random.default_rng(3)
+    rows = []
+    for k, sec in enumerate(SECTION_NAMES):
+        share = 0.15 + 0.5 * ((k * 7) % 10) / 10
+        for n in range(40):
+            a = rng.random() < share
+            rows.append(
+                (
+                    "Sample",
+                    "Alex",
+                    sec,
+                    1000 * (k + 1) + n,
+                    "Y" if a else "N",
+                    "Y" if a and rng.random() < 0.62 else "N",
+                )
+            )
+    cols = ["Last Name", "First Name", "Subspecialty", "Question Number", "Answered?", "Correct?"]
+    return pd.DataFrame(rows, columns=cols).to_csv(index=False).encode()

@@ -32,19 +32,19 @@
       "checksum": "316e5466344483b3ca9a37a55601af05"
     },
     "app.py": {
-      "checksum": "19ca02cbeea6900a5dbb10671b0d27bc"
+      "checksum": "9a7d977e6408ae389c02804792668d4e"
     },
     "ite_core/__init__.py": {
       "checksum": "83e584a570d0635ebdfff0bfc14b1b5d"
     },
     "ite_core/demo.py": {
-      "checksum": "d9b1204065469ed0f18a80cb32bd6513"
+      "checksum": "8ac2f32cc9d40957b0c154eca05f6f12"
     },
     "ite_core/history.py": {
       "checksum": "3b8661af63bb892d95fe970022626b5b"
     },
     "ite_core/individual.py": {
-      "checksum": "c6e26d4c768ee2d8d850f4fdcc3b9f79"
+      "checksum": "37eec4f2cd3e1d3b32506f34e79f5ecf"
     },
     "ite_core/limits.py": {
       "checksum": "79d46f5f9873d13041221842782a109b"
@@ -59,7 +59,7 @@
       "checksum": "2987e2670b7c8ccd7a22f87698b52d1c"
     },
     "ite_core/pdf_reports.py": {
-      "checksum": "9ce00861690810fa624419f0d5e73645"
+      "checksum": "91fb4a5da5dea9022f2e2cb00c52b3ee"
     },
     "ite_core/roster.py": {
       "checksum": "044af7d1cc4e6180646d7f265acd7c66"
@@ -74,19 +74,22 @@
       "checksum": "3a6e24150172b26ddfd150f6f2637c96"
     },
     "modules/calculator.py": {
-      "checksum": "2502e5bcb45b8cff5d585104c62a4e15"
+      "checksum": "667aaa220d809514bbf935ea436a21dc"
     },
     "modules/common.py": {
-      "checksum": "9def7a1cb873c6ac52722a3e05b1d3f8"
+      "checksum": "b34945c088127c04120b7a0acecb019f"
     },
     "modules/plots.py": {
-      "checksum": "7accd0678fb8839f555a836733e8dc8b"
+      "checksum": "e968bedb803eff91ac21a9887bbf9d64"
+    },
+    "modules/resident.py": {
+      "checksum": "ce82ffd232e1b7fd5b041afe8452a125"
     },
     "modules/upload_align.py": {
       "checksum": "280d5635e6725ca0e3bc91da165e2f4e"
     },
     "www/app.css": {
-      "checksum": "0dc2a9581cd90a6f6e2c50556c2a7375"
+      "checksum": "d935f1bb864c10f872a7a3c107ffa06c"
     }
   }
 }

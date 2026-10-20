@@ -72,3 +72,33 @@ body { color: var(--ink); }
 .app-footer .fine-print { font-size: 0.8rem; }
 
 :focus-visible { outline: 3px solid var(--bs-primary); outline-offset: 2px; }
+
+/* My ITE report */
+.who { margin-bottom: 0.25rem; color: var(--ink-soft); }
+.stat-row { display: flex; gap: 2rem; margin: 0.6rem 0; flex-wrap: wrap; }
+.stat-row > div { display: grid; }
+.stat-label { color: var(--ink-soft); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.stat-row span:last-child { font-size: 1.4rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+.summary-line { line-height: 1.7; }
+.standing { font-weight: 600; font-size: 0.85rem; }
+.standing-strength { color: var(--low); }
+.standing-focus { color: var(--high); }
+.standing-typical { color: var(--ink-soft); }
+.objectives { margin: 0; padding-left: 1.2rem; }
+.objectives li { margin: 0.2rem 0; }
+.hvc-tag { font-size: 0.72rem; font-weight: 700; color: var(--bs-primary); border: 1px solid var(--bs-primary);
+  border-radius: 4px; padding: 0 0.25rem; margin-left: 0.3rem; }
+.resident-page .card { margin-bottom: 1rem; }
+
+@media print {
+  .navbar, .no-print, .app-footer .fine-print, .explainer summary::marker { display: none !important; }
+  .card { break-inside: avoid; border: 1px solid #ccc; box-shadow: none; }
+  .accordion-collapse { display: block !important; }
+  body { font-size: 11pt; }
+}
+
+/* Phones: wide tables scroll inside their card instead of squeezing */
+@media (max-width: 576px) {
+  .data-table { display: block; overflow-x: auto; white-space: nowrap; }
+  .big-number { font-size: 2.2rem; }
+}

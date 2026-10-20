@@ -82,3 +82,53 @@ def set_points(fig, rows) -> None:
     t.y = [r[2] for r in rows]
     t.text = [f"PGY-{r[0]}" for r in rows]
     t.marker.color = [PGY_COLOR[min(3, max(1, int(r[0])))] for r in rows]
+
+
+STANDING_COLOR = {"Strength": "#009E73", "Typical": "#7a7f87", "Focus": "#D55E00"}
+
+
+def area_percentile_figure(areas, strength_at: int = 60, focus_below: int = 35) -> go.Figure:
+    """Dot chart: one row per content area, x = the resident's national percentile (0-100)."""
+    d = areas.sort_values("percentile")  # plotly draws the first row at the bottom
+    fig = go.Figure()
+    for standing in ("Focus", "Typical", "Strength"):
+        s = d[d.standing == standing]
+        if s.empty:
+            continue
+        fig.add_trace(
+            go.Scatter(
+                x=s.percentile,
+                y=s.area,
+                mode="markers+text",
+                name=standing,
+                text=[f"{int(v)}" for v in s.percentile],
+                textposition="middle right",
+                marker=dict(
+                    size=14,
+                    color=STANDING_COLOR[standing],
+                    line=dict(color="#1a1a1a", width=1),
+                    symbol={"Focus": "triangle-down", "Typical": "circle", "Strength": "triangle-up"}[standing],
+                ),
+                customdata=s[["pct_correct", "national_mean"]].values,
+                hovertemplate="%{y}: %{x}th percentile<br>You %{customdata[0]}% vs national mean "
+                "%{customdata[1]}%<extra></extra>",
+            )
+        )
+    for x, label in ((focus_below, f"{focus_below}th"), (50, "50th"), (strength_at, f"{strength_at}th")):
+        fig.add_vline(
+            x=x,
+            line=dict(color="#9aa0a6", width=1, dash="dot" if x == 50 else "dash"),
+            annotation_text=label,
+            annotation_position="top",
+            annotation_font_size=11,
+        )
+    fig.update_layout(
+        height=60 + 34 * len(d),
+        margin=dict(l=10, r=30, t=44, b=45),
+        template="plotly_white",
+        xaxis=dict(title="Your national percentile (same PGY level)", range=[0, 104], dtick=10),
+        yaxis=dict(title=None, automargin=True),
+        legend=dict(orientation="h", yanchor="bottom", y=1.04, xanchor="right", x=1),
+        font=dict(family="system-ui, -apple-system, Segoe UI, sans-serif", size=13),
+    )
+    return fig

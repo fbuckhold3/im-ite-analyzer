@@ -106,3 +106,51 @@ def footer():
         ),
         class_="app-footer",
     )
+
+
+def trajectory_table(t):
+    """Year-by-year table (calculator trajectory or a resident's report history).
+
+    Uses Exam_Year / Percentile / Delta_Percentile columns when present.
+    """
+    from ite_core.nomogram import tier_change
+
+    if t is None or len(t) < 2:
+        return None
+    has_year, has_ile = "Exam_Year" in t, "Percentile" in t
+    head = ["Year"] if not has_year else ["Exam", "Level"]
+    head += ["% correct", "Change"] + (["Percentile", "Change"] if has_ile else [])
+    head += ["Pass estimate", "Tier", "Low risk starts at"]
+    rows = []
+    for r in t.itertuples():
+        cells = [f"PGY-{int(r.PGY)}"] if not has_year else [str(int(r.Exam_Year)), f"PGY-{int(r.PGY)}"]
+        cells += [f"{fmt_num(r.Pct_Correct)}%", fmt_num(r.Delta_Pct, 0)]
+        if has_ile:
+            cells += [fmt_num(r.Percentile), fmt_num(r.Delta_Percentile, 0)]
+        cells += [fmt_prob(r.Pass_Prob)]
+        rows.append(
+            ui.tags.tr(
+                *[ui.tags.td(c) for c in cells],
+                ui.tags.td(tier_badge(r.Risk_Tier)),
+                ui.tags.td(f"{fmt_num(r.Pct_Needed_Low, 1)}%"),
+            )
+        )
+    tiers = list(t.Risk_Tier)
+    worsened = any(tier_change(a, b) == "Worsened" for a, b in zip(tiers, tiers[1:], strict=False))
+    note = (
+        ui.p(
+            "The tier dropped even though the score may not have: each PGY curve is steeper than the last, so "
+            "the same percent correct counts for less later in training. Check the percentile too.",
+            class_="hint",
+        )
+        if worsened
+        else None
+    )
+    return ui.div(
+        ui.tags.table(
+            ui.tags.thead(ui.tags.tr(*[ui.tags.th(h, scope="col") for h in head])),
+            ui.tags.tbody(*rows),
+            class_="table table-sm data-table",
+        ),
+        note,
+    )

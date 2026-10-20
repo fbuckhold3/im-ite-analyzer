@@ -11,6 +11,7 @@ from shiny import App, ui
 
 from modules.calculator import calculator_server, calculator_ui
 from modules.common import REPO, citation, footer, how_to_read
+from modules.resident import resident_server, resident_ui
 from modules.upload_align import upload_server, upload_ui
 
 WWW = Path(__file__).parent / "www"
@@ -25,6 +26,10 @@ def about_panel():
         ),
         ui.tags.ul(
             ui.tags.li(ui.strong("Calculator"), " — estimated chance of passing ABIM from your percent correct."),
+            ui.tags.li(
+                ui.strong("My ITE report"),
+                " — upload your ACP score report for strengths, focus areas and missed objectives.",
+            ),
             ui.tags.li(ui.strong("Program data"), " — upload ACP roster files (and MKSAP) to analyze a whole program."),
         ),
         how_to_read(),
@@ -54,6 +59,7 @@ def about_panel():
 
 app_ui = ui.page_navbar(
     ui.nav_panel("Calculator", calculator_ui("calc"), value="calc"),
+    ui.nav_panel("My ITE report", resident_ui("me"), value="me"),
     ui.nav_panel("Program data", upload_ui("upload"), value="upload"),
     ui.nav_panel("About", about_panel(), value="about"),
     title="IM-ITE Analyzer",
@@ -68,6 +74,7 @@ app_ui = ui.page_navbar(
 
 def server(input, output, session):
     calculator_server("calc")
+    resident_server("me")
     upload_server("upload")  # returns the session dataset; later tabs will read it
 
 

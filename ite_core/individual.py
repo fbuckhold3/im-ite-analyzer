@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import pandas as pd
 
+from . import names
 from .nomogram import DEFAULT_CUTOFFS, pass_prob, pct_for_prob, risk_tier
 
 # ITE content area -> MKSAP section codes. PROVISIONAL: GIM / Geriatrics have no one-to-one
@@ -84,7 +85,49 @@ def analyze_examinee(
         areas=tbl.reset_index(drop=True),
         strengths=tbl[tbl.standing == "Strength"].area.tolist(),
         focus_areas=focus.area.tolist(),
+        missed=missed.reset_index(drop=True),
         missed_by_area={a: g.objective.tolist() for a, g in missed.groupby("area", sort=False)},
+        pgy_note=(
+            "ACP compares PGY levels other than 1-3 (and non-IM residents) with the PGY-2 group; the pass estimate "
+            "uses the PGY-3 curve."
+            if pgy and pgy > 3
+            else None
+        ),
         hvc=areas[areas.area == "High Value Care"].to_dict("records"),
     )
     return out
+
+
+def group_by_resident(reports: list[dict]) -> dict[str, list[dict]]:
+    """Candidate ID -> that resident's reports, oldest exam year first (one per year; a later upload wins)."""
+    by: dict[str, dict[int, dict]] = {}
+    for r in reports:
+        if r.get("candidate_id"):
+            by.setdefault(r["candidate_id"], {})[r.get("exam_year") or 0] = r
+    return {cid: [yrs[y] for y in sorted(yrs)] for cid, yrs in by.items()}
+
+
+def history(reports: list[dict], cutoffs=DEFAULT_CUTOFFS) -> pd.DataFrame:
+    """One resident's reports -> one row per exam year with pass estimate, tier and changes."""
+    rows = [
+        dict(Exam_Year=r.get("exam_year"), PGY=r["pgy"], Pct_Correct=r["pct_correct"], Percentile=r["percentile"])
+        for r in reports
+        if r.get("pgy") and r.get("pct_correct") is not None
+    ]
+    h = pd.DataFrame(rows, columns=["Exam_Year", "PGY", "Pct_Correct", "Percentile"])
+    h["Pass_Prob"] = [pass_prob(a, b) for a, b in zip(h.Pct_Correct, h.PGY, strict=True)]
+    h["Risk_Tier"] = h.Pass_Prob.map(lambda p: risk_tier(p, cutoffs))
+    h["Pct_Needed_Low"] = [round(pct_for_prob(cutoffs[1], p), 1) for p in h.PGY]
+    h["Delta_Pct"] = h.Pct_Correct.diff()
+    h["Delta_Percentile"] = h.Percentile.diff()
+    return h
+
+
+def pick_mksap_account(people: pd.DataFrame, report_name: str | None) -> str | None:
+    """A resident's own export has one account: use it. Otherwise match the report name (first-name rule)."""
+    if len(people) == 1:
+        return people.mk_key.iloc[0]
+    if not report_name:
+        return None
+    cw = names.match_mksap(pd.DataFrame(dict(ID=["me"], Name=[report_name])), people)
+    return cw.mksap_key.iloc[0]

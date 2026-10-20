@@ -5,6 +5,16 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 ### Added
+- **My ITE report** tab: a resident uploads their ACP Examinee Performance Report PDF (plus earlier years and,
+  optionally, their own MKSAP export) → pass estimate and tier, score needed for Low risk now and next year,
+  content-area percentile chart and table (Strength ≥60th / Focus <35th), missed objectives grouped by area
+  (focus areas first, HVC marked), trajectory over years, MKSAP coverage per area (provisional mapping),
+  print / save-as-PDF view. A composite PDF shows a resident picker. Invented sample report for trying it out.
+- `individual.history()`, `group_by_resident()`, `pick_mksap_account()`; PGY-4 / non-IM comparison-group note.
+
+### Fixed
+- Examinee reports for the same Candidate ID in different exam years are no longer merged when they sit in
+  one PDF.
 - Shiny web app (`app.py`): **Calculator** tab (one exam or all years; pass estimate, tier, score needed for
   Low risk, nomogram plot that updates in place, trajectory table) and **Program data → Upload & Align** tab
   (multi-year ACP rosters, optional MKSAP export and saved crosswalk, per-file status with year fix-up,

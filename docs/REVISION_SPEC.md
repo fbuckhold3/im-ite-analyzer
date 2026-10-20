@@ -115,7 +115,8 @@ gain % correct and lose percentile).
 ## 7. Build order
 1. ✅ `ite_core` + tests; validated against a private real-data analysis.
 2. ✅ Upload & Align tab with crosswalk export/import; quick-calculator tab; demo data; upload hardening.
-3. Trends + class matrix. 4. ABIM tab. 5. MKSAP tab. 6. Resident self-analysis tab.
+3. ✅ Resident self-analysis tab ("My ITE report"; moved up from step 6).
+4. Trends + class matrix. 5. ABIM tab. 6. MKSAP tab.
 7. Item gaps + report downloads. 8. PDF splitter + emailing manifest.
 
 ## 8. Open questions

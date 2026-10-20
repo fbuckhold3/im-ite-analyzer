@@ -10,7 +10,7 @@ from shinywidgets import output_widget, render_plotly
 from ite_core import nomogram
 
 from . import plots
-from .common import citation, fmt_num, fmt_prob, how_to_read, message, tier_badge
+from .common import citation, fmt_num, fmt_prob, how_to_read, message, tier_badge, trajectory_table
 
 LOW_CUTOFFS = {"0.90": "90% (default)", "0.80": "80%", "0.75": "75%"}
 
@@ -139,39 +139,4 @@ def calculator_server(input, output, session):
 
     @render.ui
     def trajectory():
-        t = table()
-        if t is None or len(t) < 2:
-            return None
-        rows = [
-            ui.tags.tr(
-                ui.tags.td(f"PGY-{int(r.PGY)}"),
-                ui.tags.td(f"{fmt_num(r.Pct_Correct)}%"),
-                ui.tags.td(fmt_num(r.Delta_Pct, 0) if not math.isnan(r.Delta_Pct) else "—"),
-                ui.tags.td(fmt_prob(r.Pass_Prob)),
-                ui.tags.td(tier_badge(r.Risk_Tier)),
-                ui.tags.td(f"{fmt_num(r.Pct_Needed_Low, 1)}%"),
-            )
-            for r in t.itertuples()
-        ]
-        note = None
-        if (t.Tier_Change == "Worsened").any():
-            note = ui.p(
-                "Your tier dropped even though the score may not have: each PGY curve is steeper than the last, "
-                "so the same percent correct counts for less later in training. Check your percentile too.",
-                class_="hint",
-            )
-        return ui.div(
-            ui.tags.table(
-                ui.tags.thead(
-                    ui.tags.tr(
-                        *[
-                            ui.tags.th(h, scope="col")
-                            for h in ("Year", "% correct", "Change", "Pass estimate", "Tier", "Low risk starts at")
-                        ]
-                    )
-                ),
-                ui.tags.tbody(*rows),
-                class_="table table-sm data-table",
-            ),
-            note,
-        )
+        return trajectory_table(table())

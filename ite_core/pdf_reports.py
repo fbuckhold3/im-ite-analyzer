@@ -72,7 +72,9 @@ def parse_examinee_text(pages: list[str]) -> list[dict]:
     for i, t in enumerate(pages):
         cid = re.search(r"Candidate ID:\s*(\d+)", t)
         cid = cid.group(1) if cid else None
-        if not groups or (cid and cid != groups[-1]["candidate_id"]):
+        yr = _year(t)
+        new_year = yr is not None and groups and groups[-1]["exam_year"] not in (None, yr)
+        if not groups or (cid and cid != groups[-1]["candidate_id"]) or new_year:
             name = re.search(r"Name:\s*(.+)", t)
             prog = re.search(r"Program ID:\s*(\d+)", t)
             groups.append(
