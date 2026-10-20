@@ -1,5 +1,4 @@
 import pandas as pd
-import pytest
 
 from ite_core import demo, individual, mksap, pdf_reports
 from tests.conftest import examinee_pages
@@ -46,8 +45,8 @@ def test_pgy4_note():
 
 
 def test_pick_mksap_account():
-    own = mksap.per_person(mksap.load_mksap(demo.sample_mksap_csv()))
-    assert individual.pick_mksap_account(own, "Anything, At All") == "Sample|Alex"  # single account: use it
+    one = pd.DataFrame(dict(mk_key=["Sample|Alex"], mk_last=["Sample"], mk_first=["Alex"]))
+    assert individual.pick_mksap_account(one, "Anything, At All") == "Sample|Alex"  # single account: use it
     many = pd.DataFrame(
         dict(mk_key=["Sample|Alex", "Sample|Robin"], mk_last=["Sample"] * 2, mk_first=["Alex", "Robin"])
     )
@@ -56,13 +55,12 @@ def test_pick_mksap_account():
     assert individual.pick_mksap_account(many, None) is None
 
 
-@pytest.mark.parametrize("area,codes", [("Infectious Diseases", ["ID"]), ("High Value Care", [])])
-def test_mksap_columns_from_own_export(area, codes):
-    raw = mksap.load_mksap(demo.sample_mksap_csv())
-    sec = mksap.by_section(raw)
-    a = individual.analyze_examinee(demo.sample_examinee_reports()[-1], mksap_sections=sec)
+def test_mksap_columns_from_program_sections():
+    """The program MKSAP export can still be joined to one resident's ITE areas (e.g. for a PD drill-down)."""
+    d = demo.make_demo()
+    sections = mksap.by_section(mksap.load_mksap(d["mksap"][1]))
+    key = sections.mk_key.iloc[0]
+    a = individual.analyze_examinee(demo.sample_examinee_reports()[-1], mksap_sections=sections[sections.mk_key == key])
     t = a["areas"].set_index("area")
-    if codes:
-        assert 0 <= t.loc[area, "mksap_pct_done"] <= 100
-    else:
-        assert area not in t.index  # HVC is reported separately
+    assert 0 <= t.loc["Infectious Diseases", "mksap_pct_done"] <= 100
+    assert "High Value Care" not in t.index

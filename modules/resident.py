@@ -1,12 +1,12 @@
-"""My ITE report: a resident uploads their ACP Examinee Performance Report(s) (+ optional MKSAP export)."""
+"""My ITE report: a resident uploads their ACP Examinee Performance Report(s). ITE only — MKSAP exports are
+program-level, so MKSAP analysis lives under Program data."""
 
 from __future__ import annotations
 
 from shiny import module, reactive, render, ui
 from shinywidgets import output_widget, render_plotly
 
-from ite_core import demo, individual, mksap
-from ite_core import session as S
+from ite_core import demo, individual
 from ite_core.limits import MAX_FILE_MB, PDF_EXT, UploadError, check_file
 from ite_core.pdf_reports import parse_examinee_pdf
 
@@ -31,13 +31,10 @@ def resident_ui():
                     accept=[".pdf"],
                     button_label="Choose PDF…",
                 ),
-                ui.input_file(
-                    "mksap",
-                    "Your MKSAP Digital question export (optional, .csv)",
-                    accept=[".csv"],
-                    button_label="Choose file…",
+                ui.p(
+                    f"Up to {MAX_FILE_MB} MB per file. MKSAP analysis is available to programs under Program data.",
+                    class_="hint",
                 ),
-                ui.p(f"Up to {MAX_FILE_MB} MB per file.", class_="hint"),
                 ui.div(
                     ui.input_action_button("sample", "Try a sample report", class_="btn-outline-primary btn-sm"),
                     ui.input_action_button("clear", "Clear", class_="btn-outline-secondary btn-sm"),
@@ -77,8 +74,6 @@ def resident_ui():
 @module.server
 def resident_server(input, output, session):
     reports = reactive.value([])
-    mk_people = reactive.value(None)
-    mk_sections = reactive.value(None)
     notes = reactive.value([])
     is_sample = reactive.value(False)
 
@@ -100,27 +95,9 @@ def resident_server(input, output, session):
         is_sample.set(False)
 
     @reactive.effect
-    @reactive.event(input.mksap)
-    def _mksap():
-        files = input.mksap() or []
-        if not files:
-            return
-        try:
-            m = S.load_mksap(_take(files[0]))
-            mk_people.set(m.people)
-            mk_sections.set(m.sections)
-        except UploadError as e:
-            mk_people.set(None)
-            mk_sections.set(None)
-            ui.notification_show(str(e), type="error", duration=10)
-
-    @reactive.effect
     @reactive.event(input.sample)
     def _sample():
         reports.set(demo.sample_examinee_reports())
-        raw = mksap.load_mksap(demo.sample_mksap_csv(), name="sample MKSAP")
-        mk_people.set(mksap.per_person(raw))
-        mk_sections.set(mksap.by_section(raw))
         notes.set([])
         is_sample.set(True)
 
@@ -128,8 +105,6 @@ def resident_server(input, output, session):
     @reactive.event(input.clear)
     def _clear():
         reports.set([])
-        mk_people.set(None)
-        mk_sections.set(None)
         notes.set([])
         is_sample.set(False)
 
@@ -157,30 +132,17 @@ def resident_server(input, output, session):
         return g.get(cid)
 
     @reactive.calc
-    def mksap_account():
-        people, rs = mk_people.get(), mine()
-        if people is None or not rs:
-            return None
-        return individual.pick_mksap_account(people, rs[-1]["name"])
-
-    @reactive.calc
     def analysis():
         rs = mine()
         if not rs:
             return None
-        sec, key = mk_sections.get(), mksap_account()
-        own = sec[sec.mk_key == key] if sec is not None and key else None
-        return individual.analyze_examinee(rs[-1], mksap_sections=own)
+        return individual.analyze_examinee(rs[-1])
 
     @render.ui
     def load_messages():
         items = [message(m, "error") for m in notes.get()]
         if is_sample.get():
             items.insert(0, message("Showing an invented sample resident.", "info"))
-        if mk_people.get() is not None and mine() and mksap_account() is None:
-            items.append(
-                message("We couldn't find your name in the MKSAP file, so MKSAP columns are not shown.", "warning")
-            )
         return ui.div(*items) if items else None
 
     # ---------------------------------------------------------------- results
@@ -245,9 +207,7 @@ def resident_server(input, output, session):
         if a is None:
             return None
         t = a["areas"]
-        has_mk = "mksap_pct_done" in t
         head = ["Content area", "You", "National mean", "SD", "Percentile", "Standing", "Missed"]
-        head += ["MKSAP done", "MKSAP accuracy"] if has_mk else []
         rows = []
         for r in t.itertuples():
             cells = [
@@ -259,11 +219,6 @@ def resident_server(input, output, session):
                 ui.span(r.standing, class_=f"standing standing-{r.standing.lower()}"),
                 str(r.n_missed),
             ]
-            if has_mk:
-                cells += [
-                    f"{fmt_num(r.mksap_pct_done)}%" if r.mksap_pct_done is not None else "—",
-                    f"{fmt_num(r.mksap_accuracy)}%" if r.mksap_accuracy is not None else "—",
-                ]
             rows.append(ui.tags.tr(*[ui.tags.td(c) for c in cells]))
         hvc = a["hvc"][0] if a["hvc"] else None
         return ui.div(
@@ -280,13 +235,6 @@ def resident_server(input, output, session):
                 " Strength = 60th percentile or above; Focus = below the 35th (or your two lowest areas).",
                 class_="hint",
             ),
-            ui.p(
-                "MKSAP columns use a provisional mapping of ITE areas to MKSAP sections (General Internal Medicine "
-                "and Geriatrics are approximate).",
-                class_="hint",
-            )
-            if has_mk
-            else None,
         )
 
     @render.ui

@@ -261,25 +261,3 @@ def sample_examinee_reports() -> list[dict]:
     from .pdf_reports import parse_examinee_text
 
     return parse_examinee_text(_sample_pages(2025, 1, 0, 59, 45) + _sample_pages(2026, 2, 1, 67, 50))
-
-
-def sample_mksap_csv() -> bytes:
-    """An invented resident's own MKSAP export (same columns as the program export, one account)."""
-    rng = np.random.default_rng(3)
-    rows = []
-    for k, sec in enumerate(SECTION_NAMES):
-        share = 0.15 + 0.5 * ((k * 7) % 10) / 10
-        for n in range(40):
-            a = rng.random() < share
-            rows.append(
-                (
-                    "Sample",
-                    "Alex",
-                    sec,
-                    1000 * (k + 1) + n,
-                    "Y" if a else "N",
-                    "Y" if a and rng.random() < 0.62 else "N",
-                )
-            )
-    cols = ["Last Name", "First Name", "Subspecialty", "Question Number", "Answered?", "Correct?"]
-    return pd.DataFrame(rows, columns=cols).to_csv(index=False).encode()

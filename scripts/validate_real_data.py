@@ -195,6 +195,24 @@ if "mksap_progress" in T:
         s = st[st.Subspecialty == code].sort_values("PGY")
         check(f"section {code}", dict(bank=int(s.bank.iloc[0]), done=s.done.tolist(), acc=s.acc.tolist()), want)
 
+if "overview" in T and (DATA / T["overview"]["file"]).exists():
+    print("\n== 4e. MKSAP members-overview export (same analyses, other export type)")
+    from ite_core import session as S
+
+    ov_t = T["overview"]
+    ov = S.load_mksap(S.Upload(ov_t["file"], (DATA / ov_t["file"]).read_bytes()))
+    check("overview: detected kind", ov.kind, ov_t["kind"])
+    check("overview: bank", ov.bank, ov_t["bank"])
+    check("overview: people", len(ov.people), ov_t["n_people"])
+    ov_cw = names.match_mksap(cur, ov.people)
+    check("overview: residents matched", int(ov_cw.mksap_key.notna().sum()), ov_t["n_matched"])
+    ov_md = stats.mksap_models(history.attach_mksap(history.wide(long, cur_year), ov_cw, ov.people))
+    check("overview: n", ov_md["n"], ov_t["n_model"])
+    for k in ("dbl", "dbl_ile"):
+        check(f"overview: {k}", ov_md[k], ov_t[k], 0.05)
+    for k in ("r2_base", "r2_vol", "b_acc"):
+        check(f"overview: {k}", ov_md[k], ov_t[k], 0.005)
+
 print("\n== 5. Program Performance Report")
 prog = pdf_reports.parse_program_pdf(one("*Program Report*.pdf", "program_report"))
 it = prog["items"]

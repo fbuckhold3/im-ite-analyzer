@@ -34,8 +34,9 @@ class Rosters:
 class Mksap:
     name: str
     people: pd.DataFrame
-    sections: pd.DataFrame
+    sections: pd.DataFrame | None  # None for the members-overview export
     bank: int
+    kind: str = "detail"  # "overview" or "detail"
 
 
 @dataclass
@@ -103,11 +104,10 @@ def load_rosters(uploads: list[Upload], cutoffs=DEFAULT_CUTOFFS, include_pgy4: b
 
 def load_mksap(up: Upload) -> Mksap:
     check_file(up.name, len(up.data), MKSAP_EXT, "MKSAP CSV")
-    raw = mksap.load_mksap(up.data, name=up.name)
-    people = mksap.per_person(raw)
+    kind, people, sections = mksap.read_export(up.data, name=up.name)
     if people.empty:
         raise UploadError(f"“{up.name}” has no MKSAP accounts in it.")
-    return Mksap(name=up.name, people=people, sections=mksap.by_section(raw), bank=int(people.mk_bank.max()))
+    return Mksap(name=up.name, people=people, sections=sections, bank=int(people.mk_bank.max()), kind=kind)
 
 
 def match(rosters: Rosters, mk: Mksap, prior: pd.DataFrame | None = None) -> pd.DataFrame:

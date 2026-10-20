@@ -41,7 +41,7 @@
       "checksum": "e325c2fa4a87b3e002069cf4a5352515"
     },
     "ite_core/demo.py": {
-      "checksum": "37d1a319c6cfe12663d854be53cbc000"
+      "checksum": "6a0e83f84c39688e4c7b1173b9745c6b"
     },
     "ite_core/history.py": {
       "checksum": "420d533eb7704a9480de950c965a641e"
@@ -53,7 +53,7 @@
       "checksum": "79d46f5f9873d13041221842782a109b"
     },
     "ite_core/mksap.py": {
-      "checksum": "7c5edfd98f5b7b73ff8a82dd234ace8f"
+      "checksum": "fcaf6f8f9e16dab019d5f4b34d434415"
     },
     "ite_core/names.py": {
       "checksum": "6343739f135b2493a10a96c1f63a72a8"
@@ -68,7 +68,7 @@
       "checksum": "044af7d1cc4e6180646d7f265acd7c66"
     },
     "ite_core/session.py": {
-      "checksum": "10efc93e933ebbde30970f96ef168482"
+      "checksum": "88ac5e9a1cd6d7f5ec23ec58db62f0d2"
     },
     "ite_core/stats.py": {
       "checksum": "5b77ad4f99875e96106161dfdd5d6047"
@@ -83,10 +83,10 @@
       "checksum": "667aaa220d809514bbf935ea436a21dc"
     },
     "modules/common.py": {
-      "checksum": "b34945c088127c04120b7a0acecb019f"
+      "checksum": "39b4dfbda4e6a85a24a95f372f7dfc43"
     },
     "modules/mksap_tab.py": {
-      "checksum": "2ffbb2f359452ed319d8e51a8cdfa594"
+      "checksum": "c641bf67f272e86bcd51ae6fbb4b91f1"
     },
     "modules/plots.py": {
       "checksum": "d5282506109ce68d52b5c207caa06924"
@@ -95,10 +95,10 @@
       "checksum": "8c7d7040c8cb99eae31914c1f7926db2"
     },
     "modules/resident.py": {
-      "checksum": "ce82ffd232e1b7fd5b041afe8452a125"
+      "checksum": "d46fdbe04f39bf63c30a495e277f6122"
     },
     "modules/upload_align.py": {
-      "checksum": "280d5635e6725ca0e3bc91da165e2f4e"
+      "checksum": "b0dda70097120615fddc9a90511a57fb"
     },
     "www/app.css": {
       "checksum": "4fcda9eeacdc8acd0be2dff540d842c0"

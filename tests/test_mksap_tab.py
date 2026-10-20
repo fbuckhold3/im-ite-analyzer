@@ -63,3 +63,57 @@ def test_points_and_trend(data):
     xs, ys = stats.trend_line(pts.mk_answered, pts.dPct_1yr)
     assert len(xs) == 50 and xs.min() >= pts.mk_answered.min() - 1e-6
     assert stats.trend_line(pts.mk_answered.head(2), pts.dPct_1yr.head(2))[0].size == 0
+
+
+def _overview_from_detail(detail_csv: bytes) -> bytes:
+    """Invented overview built from the demo detail export (same people, totals only)."""
+    people = mksap.per_person(mksap.load_mksap(detail_csv))
+    ov = pd.DataFrame(
+        {
+            "Last Name": people.mk_last,
+            "First Name": people.mk_first,
+            "Total Questions": 600,
+            "Number Complete": people.mk_answered,
+            "Percentage Complete": (100 * people.mk_answered / 600).round(),
+            "Number Correct": people.mk_correct,
+            "Percentage Correct": (100 * people.mk_correct / people.mk_answered.where(people.mk_answered > 0))
+            .fillna(0)
+            .round(),
+        }
+    )
+    return ov.to_csv(index=False).encode()
+
+
+def test_overview_export_detected_and_analysable():
+    d = demo.make_demo()
+    r = S.load_rosters([S.Upload(n, b) for n, b in d["rosters"]])
+    mk = S.load_mksap(S.Upload("members-overview.csv", _overview_from_detail(d["mksap"][1])))
+    assert mk.kind == "overview" and mk.sections is None and mk.bank == 600
+    det = S.load_mksap(S.Upload(*d["mksap"]))
+    assert det.kind == "detail" and det.sections is not None
+    cw = S.match(r, mk)
+    assert (cw.mksap_key.notna()).sum() == (S.match(r, det).mksap_key.notna()).sum()
+    w = S.build_wide(r, mk, cw)
+    assert stats.mksap_models(w)["ok"]
+    assert mksap.progress_by_pgy(w).n.sum() == 29
+
+
+def test_unknown_mksap_layout_is_explained():
+    bad = pd.DataFrame({"Last Name": ["A"], "First Name": ["B"], "Score": [1]}).to_csv(index=False).encode()
+    with pytest.raises(mksap.UploadError, match="members overview"):
+        mksap.read_export(bad, "x.csv")
+    ov = (
+        pd.DataFrame(
+            {
+                "Last Name": ["A"],
+                "First Name": ["B"],
+                "Total Questions": [10],
+                "Number Complete": ["lots"],
+                "Number Correct": [1],
+            }
+        )
+        .to_csv(index=False)
+        .encode()
+    )
+    with pytest.raises(mksap.UploadError, match="not numbers"):
+        mksap.read_export(ov, "x.csv")

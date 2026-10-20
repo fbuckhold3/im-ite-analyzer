@@ -14,10 +14,11 @@ import pandas as pd
 from shiny import module, reactive, render, ui
 
 from ite_core import demo, names
+from ite_core import mksap as mksap_mod
 from ite_core import session as S
 from ite_core.limits import MAX_FILE_MB, UploadError
 
-from .common import message, privacy_note
+from .common import message, mksap_howto, privacy_note
 
 NO_ACCOUNT = "__none__"
 TIER_ORDER = {"Ambiguous": 0, "Unmatched": 1, "Probable": 2, "Manual": 3, "Exact": 4}
@@ -48,8 +49,12 @@ def upload_ui():
                     button_label="Choose files…",
                 ),
                 ui.input_file(
-                    "mksap", "MKSAP Digital detail export (optional)", accept=[".csv"], button_label="Choose file…"
+                    "mksap",
+                    "MKSAP Digital program export (optional) — members overview or full detail, .csv",
+                    accept=[".csv"],
+                    button_label="Choose file…",
                 ),
+                mksap_howto(),
                 ui.input_file(
                     "crosswalk",
                     "Saved crosswalk from an earlier session (optional)",
@@ -219,7 +224,12 @@ def upload_server(input, output, session):
             return message(err, "error")
         if mk is None:
             return None
-        return ui.p(f"MKSAP: {len(mk.people):,} accounts, {mk.bank:,} questions in the bank.", class_="hint")
+        extra = "" if mk.kind == "detail" else " Section coverage needs the full detail export."
+        return ui.p(
+            f"MKSAP {mksap_mod.KIND_LABEL[mk.kind]} export: {len(mk.people):,} accounts, {mk.bank:,} questions in "
+            f"the bank.{extra}",
+            class_="hint",
+        )
 
     @render.ui
     def coverage():

@@ -103,7 +103,11 @@ def mksap_server(input, output, session, dataset):
         bank = int(x.mk_bank.max())
         return ui.div(
             ui.layout_columns(*items, col_widths=[4] * len(items)),
-            ui.p(f"Current MKSAP bank: {bank:,} questions.", class_="hint"),
+            ui.p(
+                f"From the {mksap.KIND_LABEL[dataset().mksap.kind]} export · bank of {bank:,} questions. The two "
+                "MKSAP export types count the bank differently, so compare “% of the bank” only within one type.",
+                class_="hint",
+            ),
         )
 
     @render_plotly
@@ -128,6 +132,12 @@ def mksap_server(input, output, session, dataset):
         x, ds = w(), dataset()
         if x is None:
             return None
+        if ds.mksap.sections is None:
+            return message(
+                "Section coverage needs the full detail MKSAP export; the members overview has totals only. "
+                "Everything else on this tab works with either export.",
+                "info",
+            )
         st = mksap.section_table(ds.mksap.sections, x)
         pgys = sorted(st.PGY.unique())
         head = ui.tags.tr(

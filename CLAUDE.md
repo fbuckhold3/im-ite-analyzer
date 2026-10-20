@@ -10,7 +10,8 @@ Private, machine-local notes (if present): `CLAUDE.local.md`.
    Report PDF → trends, class matrix, board-pass estimates, item-gap flags.
 3. **Resident self-analysis** — upload own Examinee Performance Report PDF → pass estimate,
    strengths / focus areas, missed objectives by area.
-4. **MKSAP** — PD or resident adds the MKSAP Digital detail export → progress + MKSAP-vs-ITE analysis.
+4. **MKSAP** — PD adds the program's MKSAP Digital export (members overview or full detail; residents
+   cannot export their own) → progress + MKSAP-vs-ITE analysis. Export steps: docs/MKSAP_EXPORT.md (TODO: exact clicks).
 
 ## Layout
 - `ite_core/` pure functions, no Shiny, no disk writes: `nomogram`, `roster`, `names`, `mksap`,

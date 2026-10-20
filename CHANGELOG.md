@@ -5,6 +5,13 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 ### Added
+- MKSAP **members overview** export accepted alongside the full detail export (detected from the columns);
+  every analysis works with either except section coverage, which needs the full detail. Upload & Align shows
+  the export type and bank size; "How to get your program's MKSAP export" help and `docs/MKSAP_EXPORT.md`.
+
+### Changed
+- MKSAP is program-level only: residents cannot export their own MKSAP data, so the MKSAP upload, sample file
+  and MKSAP columns were removed from **My ITE report**.
 - **MKSAP** sub-tab: progress by class (median and IQR of questions answered, % of bank, accuracy; strip plot;
   volume bins; section table of % attempted and accuracy by PGY) and MKSAP vs the next ITE for PGY-2/3
   (plain-language headline from the adjusted regression, thirds-within-class chart, scatter with trend line,

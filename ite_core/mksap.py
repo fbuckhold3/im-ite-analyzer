@@ -1,8 +1,13 @@
-"""MKSAP Digital detail export: one row per person x question.
+"""MKSAP Digital program exports. Two kinds, detected from the columns:
 
-Columns: Last Name, First Name, Subspecialty, Question Number, Answered?, Correct? (Y/N).
-Question numbers repeat within a subspecialty for different items — count rows, never
-de-duplicate on the number. Each person carries the full bank (3,156 rows in 2026).
+* **Members overview** — one row per person: Last Name, First Name, Total Questions, Number Complete,
+  Percentage Complete, Number Correct, Percentage Correct. Small; supports everything except section coverage.
+* **Full detail** — one row per person x question: Last Name, First Name, Subspecialty, Question Number,
+  Answered?, Correct? (Y/N). Question numbers are not unique item IDs (they repeat across and within
+  sections) — count rows, never de-duplicate on the number. Adds section coverage.
+
+The two count the bank differently (2026: overview 2,375 questions; detail 3,156 rows per person), so
+"% of bank" is only comparable within one export type. Question totals and all ITE analyses agree closely.
 """
 
 from __future__ import annotations
@@ -14,7 +19,9 @@ import pandas as pd
 
 from .limits import ISSUE_HINT, MAX_MKSAP_ROWS, UploadError, check_rows
 
-REQUIRED = ["Last Name", "First Name", "Subspecialty", "Answered?", "Correct?"]
+REQUIRED = ["Last Name", "First Name", "Subspecialty", "Answered?", "Correct?"]  # full detail
+OVERVIEW_REQUIRED = ["Last Name", "First Name", "Total Questions", "Number Complete", "Number Correct"]
+KIND_LABEL = {"overview": "members overview", "detail": "full question detail"}
 
 # Section codes seen in the 2026 export. TODO: confirm HP / IN / CS / FC labels with ACP.
 SECTION_NAMES = {
@@ -40,7 +47,7 @@ VOLUME_BINS = [0, 100, 250, 500, 1000, np.inf]
 VOLUME_LABELS = ["Under 100", "100–249", "250–499", "500–999", "1,000+"]
 
 
-def load_mksap(source, name: str = "MKSAP file") -> pd.DataFrame:
+def _read(source, name: str) -> pd.DataFrame:
     if isinstance(source, (bytes, bytearray)):
         source = io.BytesIO(source)
     try:
@@ -49,17 +56,63 @@ def load_mksap(source, name: str = "MKSAP file") -> pd.DataFrame:
         raise UploadError(f"“{name}” could not be read as a CSV file.") from e
     check_rows(name, len(m), MAX_MKSAP_ROWS)
     m.columns = [c.strip() for c in m.columns]
-    missing = [c for c in REQUIRED if c not in m.columns]
-    if missing:
-        raise UploadError(
-            f"“{name}” is not an MKSAP Digital detail export — missing column(s): {', '.join(missing)}. {ISSUE_HINT}"
-        )
+    return m
+
+
+def _prep_detail(m: pd.DataFrame) -> pd.DataFrame:
     m["Last Name"] = m["Last Name"].str.strip()
     m["First Name"] = m["First Name"].str.strip()
     m["ans"] = m["Answered?"].str.strip().str.upper().eq("Y")
     m["cor"] = m["Correct?"].str.strip().str.upper().eq("Y")
     m["mk_key"] = m["Last Name"] + "|" + m["First Name"]
     return m
+
+
+def load_mksap(source, name: str = "MKSAP file") -> pd.DataFrame:
+    """Full detail export -> one row per person x question (with ans / cor / mk_key)."""
+    m = _read(source, name)
+    missing = [c for c in REQUIRED if c not in m.columns]
+    if missing:
+        raise UploadError(
+            f"“{name}” is not an MKSAP Digital detail export — missing column(s): {', '.join(missing)}. {ISSUE_HINT}"
+        )
+    return _prep_detail(m)
+
+
+def overview_people(m: pd.DataFrame, name: str = "MKSAP file") -> pd.DataFrame:
+    """Members overview export -> the same per-person frame per_person() returns."""
+    num = {c: pd.to_numeric(m[c], errors="coerce") for c in ("Total Questions", "Number Complete", "Number Correct")}
+    if any(v.isna().any() for v in num.values()):
+        raise UploadError(f"“{name}”: some question counts are not numbers. {ISSUE_HINT}")
+    last, first = m["Last Name"].fillna("").str.strip(), m["First Name"].fillna("").str.strip()
+    per = pd.DataFrame(
+        dict(
+            mk_key=last + "|" + first,
+            mk_last=last,
+            mk_first=first,
+            mk_answered=num["Number Complete"].astype(int),
+            mk_correct=num["Number Correct"].astype(int),
+            mk_bank=num["Total Questions"].astype(int),
+        )
+    )
+    per = per[(per.mk_last != "") | (per.mk_first != "")].drop_duplicates("mk_key").sort_values("mk_key")
+    per["mk_pct_correct"] = (100 * per.mk_correct / per.mk_answered).where(per.mk_answered >= 1)
+    per["mk_pct_bank"] = 100 * per.mk_answered / per.mk_bank
+    return per.reset_index(drop=True)
+
+
+def read_export(source, name: str = "MKSAP file") -> tuple[str, pd.DataFrame, pd.DataFrame | None]:
+    """Detect the export type -> (kind, people, sections). sections is None for the overview."""
+    m = _read(source, name)
+    if all(c in m.columns for c in REQUIRED):
+        raw = _prep_detail(m)
+        return "detail", per_person(raw), by_section(raw)
+    if all(c in m.columns for c in OVERVIEW_REQUIRED):
+        return "overview", overview_people(m, name), None
+    raise UploadError(
+        f"“{name}” doesn't look like an MKSAP Digital program export. Expected the members overview "
+        f"({', '.join(OVERVIEW_REQUIRED)}) or the full detail ({', '.join(REQUIRED)}). {ISSUE_HINT}"
+    )
 
 
 def per_person(m: pd.DataFrame) -> pd.DataFrame:
