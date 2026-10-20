@@ -20,7 +20,7 @@
   },
   "files": {
     "requirements.txt": {
-      "checksum": "a9715dc818b9554e71b4e5d2ab3809e4"
+      "checksum": "e5100158a4127548a79060676336b5c5"
     },
     ".python-version": {
       "checksum": "61939823fbcc7e8de3b61ab105331baf"
@@ -77,7 +77,7 @@
       "checksum": "3a6e24150172b26ddfd150f6f2637c96"
     },
     "modules/board.py": {
-      "checksum": "d049589aaf6650fdfa4e98a69aa3d85c"
+      "checksum": "5d7fa36e854b393777f40801b0f9daf8"
     },
     "modules/calculator.py": {
       "checksum": "667aaa220d809514bbf935ea436a21dc"
@@ -101,13 +101,19 @@
       "checksum": "8c7d7040c8cb99eae31914c1f7926db2"
     },
     "modules/report_builder.py": {
-      "checksum": "88fc10241ffe4939fe1846e45ef6892b"
+      "checksum": "406029e5a07d54e8dfaa7ee392311d69"
     },
     "modules/reports_tab.py": {
       "checksum": "0aa5f8a9a6ce23effea9c59223bba6fa"
     },
     "modules/resident.py": {
-      "checksum": "d46fdbe04f39bf63c30a495e277f6122"
+      "checksum": "ccbafe9e14aec027b4dd5ea638d1d11a"
+    },
+    "modules/resident_pdf.py": {
+      "checksum": "2776311bc44ce539ec65858706dff7f0"
+    },
+    "modules/static_charts.py": {
+      "checksum": "10d63d710c8114c2f6ed35dd36bb7fe1"
     },
     "modules/upload_align.py": {
       "checksum": "5da69f3e8468eca608c9d760ba5f7466"

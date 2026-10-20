@@ -11,7 +11,7 @@ from shinywidgets import output_widget, render_plotly
 
 from ite_core import board
 
-from . import plots
+from . import plots, resident_pdf
 from .common import citation, fmt_num, fmt_prob, how_to_read, message, tier_badge, trajectory_table
 from .program_tabs import NEED_DATA
 
@@ -173,7 +173,13 @@ def board_server(input, output, session, dataset):
         areas = board.resident_areas(ds.rosters.long, sid)
         y = cy()
         return ui.card(
-            ui.card_header(f"{r.Name} · PGY-{int(r.PGY)}"),
+            ui.card_header(
+                ui.div(
+                    ui.span(f"{r.Name} · PGY-{int(r.PGY)}"),
+                    ui.download_button("resident_pdf_dl", "Download resident PDF", class_="btn-sm btn-outline-primary"),
+                    class_="d-flex justify-content-between align-items-center gap-2",
+                )
+            ),
             ui.layout_columns(
                 ui.div(
                     ui.div(fmt_prob(r[f"Prob_{y}"]), class_="big-number"),
@@ -197,6 +203,15 @@ def board_server(input, output, session, dataset):
                 col_widths=(6, 6),
             ),
         )
+
+    @render.download_button(
+        filename=lambda: resident_pdf.pdf_filename(resident_pdf.from_roster(dataset(), selected.get(), cutoffs())),
+        media_type="application/pdf",
+    )
+    def resident_pdf_dl():
+        sid = selected.get()
+        if sid and bt() is not None and sid in set(bt().ID):
+            yield resident_pdf.resident_pdf(resident_pdf.from_roster(dataset(), sid, cutoffs()), cutoffs())
 
     @render_plotly
     def areas():

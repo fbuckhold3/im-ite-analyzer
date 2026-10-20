@@ -10,7 +10,7 @@ from ite_core import demo, individual
 from ite_core.limits import MAX_FILE_MB, PDF_EXT, UploadError, check_file
 from ite_core.pdf_reports import parse_examinee_pdf
 
-from . import plots
+from . import plots, resident_pdf
 from .common import citation, fmt_num, fmt_prob, how_to_read, message, privacy_note, tier_badge, trajectory_table
 from .upload_align import _take
 
@@ -62,8 +62,10 @@ def resident_ui():
                 "use only.",
                 class_="hint",
             ),
-            ui.tags.button(
-                "Print / save as PDF", class_="btn btn-outline-secondary btn-sm no-print", onclick="window.print()"
+            ui.div(
+                ui.output_ui("pdf_button"),
+                ui.tags.button("Print page", class_="btn btn-outline-secondary btn-sm", onclick="window.print()"),
+                class_="button-row no-print",
             ),
             class_="source-box",
         ),
@@ -122,6 +124,20 @@ def resident_server(input, output, session):
             for cid, rs in sorted(g.items(), key=lambda kv: kv[1][-1]["name"] or "")
         }
         return ui.input_selectize("who", f"This file has {len(g)} residents — choose one", choices)
+
+    @render.ui
+    def pdf_button():
+        if not mine():
+            return None
+        return ui.download_button("pdf", "Download PDF", class_="btn-primary btn-sm")
+
+    @render.download_button(
+        filename=lambda: resident_pdf.pdf_filename(resident_pdf.from_examinee(mine())), media_type="application/pdf"
+    )
+    def pdf():
+        rs = mine()
+        if rs:
+            yield resident_pdf.resident_pdf(resident_pdf.from_examinee(rs))
 
     @reactive.calc
     def mine():

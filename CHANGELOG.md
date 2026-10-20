@@ -5,6 +5,13 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 ### Added
+- **Resident PDF** (US Letter, 2–6 pages): estimate and tier, content-area chart and table, trajectory with the
+  nomogram, missed objectives. Download from **My ITE report** (from the resident's own score report) or from the
+  **Board pass** resident detail (from roster data; no missed objectives or national means, labelled as prepared
+  by the program). Built in memory with reportlab + static matplotlib charts (object API — safe for concurrent
+  visitors). New dependencies: `reportlab==5.0.1`, `matplotlib==3.11.2`.
+- Program HTML reports are print-ready: "Print / Save as PDF" button, US Letter page setup, one section per page,
+  toolbars hidden, and a confidentiality / de-identified line on every printed page.
 - **Download all data (.xlsx)** on the Reports tab: one identified workbook with a Read me sheet plus Residents,
   ITE by exam (every resident × exam year with content areas and graduating class), By PGY level, By class,
   Year over year (+ summary), MKSAP (+ sections for the full detail export), Crosswalk, Item gaps and Area ranks —

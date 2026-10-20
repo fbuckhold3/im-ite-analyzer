@@ -33,7 +33,16 @@ border-radius:6px;margin:1rem 0;font-weight:600} .confidential{background:#fde7e
 font-variant-numeric:tabular-nums} th,td{border-bottom:1px solid #d8dee4;padding:.3rem .6rem;text-align:left}
 th{color:#57606a;font-weight:600} .note{color:#57606a;font-size:.9rem} .box{border:1px solid #d8dee4;
 border-radius:6px;padding:.6rem .9rem;margin:.8rem 0} footer{margin-top:2.5rem;border-top:1px solid #d8dee4;
-padding-top:.8rem;color:#57606a;font-size:.85rem} @media print{.plotly-graph-div{break-inside:avoid}}
+padding-top:.8rem;color:#57606a;font-size:.85rem}
+.print-btn{float:right;font:inherit;font-size:.9rem;padding:.35rem .8rem;border:1px solid #0b5cad;
+color:#0b5cad;background:#fff;border-radius:6px;cursor:pointer} .print-footer{display:none}
+@page{size:letter;margin:0.6in 0.6in 0.7in}
+@media print{body{max-width:none;padding:0;font-size:10.5pt}
+.print-btn,.modebar,.modebar-container{display:none!important} h2{break-before:page;margin-top:0}
+h2:first-of-type{break-before:auto} table,.plotly-graph-div,.box{break-inside:avoid}
+.plotly-graph-div{max-width:100%!important} .print-footer{display:block;position:fixed;bottom:0;left:0;
+right:0;font-size:7.5pt;color:#57606a;border-top:1px solid #d8dee4;padding-top:2pt}}
+
 """
 
 
@@ -392,7 +401,18 @@ def build_report(ds, program, deidentified: bool, cutoffs=DEFAULT_CUTOFFS) -> by
         _mksap(ds, deidentified),
         _items(program),
     ]
+    print_footer = tags.div(
+        (
+            "De-identified program summary — aggregates only"
+            if deidentified
+            else "CONFIDENTIAL — contains resident-identifiable education records"
+        )
+        + f" · {title} · im-ite-analyzer",
+        class_="print-footer",
+    )
     body = tags.body(
+        print_footer,
+        tags.button("Print / Save as PDF", class_="print-btn", onclick="window.print()"),
         tags.h1(title),
         tags.p(_program_name(ds, program), class_="sub"),
         banner,

@@ -43,6 +43,9 @@ Private, machine-local notes (if present): `CLAUDE.local.md`.
   only) for anything a user can cause; `app.sanitize_errors = True` hides everything else.
 - Nomogram: cite McDonald et al. 2020 wherever predictions are shown, and describe it as an
   approximation of the published curves (see docs/METHODS.md).
+- PDFs: `modules/resident_pdf.py` (reportlab) + `modules/static_charts.py` (matplotlib **object API only — never
+  pyplot**, which has global state and breaks with concurrent visitors). Keep static charts visually in step with
+  `plots.py`. Program reports stay HTML with print CSS.
 - Every plot builder returns `widget_safe(fig)`: one NaN in widget data disconnects the session, and it also
   strips Plotly's cloud buttons (`sendChartToCloud` in plotly.js 4 uploads chart data to Plotly Cloud).
 - De-identified outputs: suppress counts 1–4 and n<5 groups AND apply complementary suppression (totals are
