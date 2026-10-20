@@ -9,6 +9,7 @@ Usage:  .venv/bin/python scripts/validate_real_data.py <data_dir>
   *Resident Score Reports*.pdf      ACP composite Examinee Performance Reports (latest year)
   analysis/*.csv                    outputs of the original reference analysis, to compare against
   validation_targets.json           expected headline numbers (see TARGET_KEYS below); optional
+                                    "yoy": {"<pgy>": {"n", "d_ile", "p", "d_pc"}} for paired change;
                                     "files": {"mksap": ..., "program_report": ..., "score_reports": ...}
                                     to pick specific files when a pattern matches more than one
 """
@@ -158,6 +159,14 @@ _, pooled = stats.mksap_thirds(w)
 pooled = pooled.set_index("vol")
 check("top third Δ % correct", pooled.loc["Highest", "dpc"], T["top_third_dpc"], 0.05)
 check("bottom third Δ % correct", pooled.loc["Lowest", "dpc"], T["bottom_third_dpc"], 0.05)
+
+print("\n== 4b. Same residents, last year -> this year (paired)")
+for pgy, want in T.get("yoy", {}).items():
+    pc = stats.paired_change(w, int(pgy))
+    check(f"PGY-{pgy} n", pc["n"], want["n"])
+    check(f"PGY-{pgy} mean percentile change", pc["d_ile"], want["d_ile"], 0.05)
+    check(f"PGY-{pgy} Wilcoxon p", pc["p"], want["p"], 0.0005)
+    check(f"PGY-{pgy} mean % correct change", pc["d_pc"], want["d_pc"], 0.05)
 
 print("\n== 5. Program Performance Report")
 prog = pdf_reports.parse_program_pdf(one("*Program Report*.pdf", "program_report"))

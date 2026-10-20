@@ -8,6 +8,7 @@ import pandas as pd
 from .nomogram import DEFAULT_CUTOFFS, pass_prob_series, risk_tier, tier_change
 
 WIDE_METRICS = ["PGY", "Pct_Correct", "Percentile", "Pass_Prob", "Risk_Tier"]
+SMALL_N = 5  # cells with fewer residents are flagged (and suppressed in de-identified outputs)
 
 
 def add_derived(long: pd.DataFrame, cutoffs=DEFAULT_CUTOFFS) -> pd.DataFrame:
@@ -35,13 +36,27 @@ def _agg(cutoffs):
 def by_level(long: pd.DataFrame, cutoffs=DEFAULT_CUTOFFS) -> pd.DataFrame:
     """PGY x exam year: n, mean % correct, mean/median percentile, % >=50th, % <35th,
     % at or above the Low-risk cutoff (pp_low)."""
-    return long.groupby(["PGY", "Exam_Year"]).agg(**_agg(cutoffs)).round(1).reset_index()
+    out = long.groupby(["PGY", "Exam_Year"]).agg(**_agg(cutoffs)).round(1).reset_index()
+    out["small_n"] = out.n < SMALL_N
+    return out
 
 
 def by_class(long: pd.DataFrame, cutoffs=DEFAULT_CUTOFFS) -> pd.DataFrame:
     """Graduating class x PGY, with the exam year each cell came from."""
     g = long.groupby(["Grad_Class", "PGY"]).agg(**_agg(cutoffs), Exam_Year=("Exam_Year", "first"))
-    return g.round(1).reset_index()
+    out = g.round(1).reset_index()
+    out["small_n"] = out.n < SMALL_N
+    return out
+
+
+def class_trajectories(long: pd.DataFrame, value: str = "ile", cutoffs=DEFAULT_CUTOFFS) -> pd.DataFrame:
+    """by_class() plus `status`: 'current' if the class is still in training in the latest exam year,
+    else 'graduated'. Sorted newest class first (the fixed colour order for charts)."""
+    t = by_class(long, cutoffs)
+    latest = int(long.Exam_Year.max())
+    t["status"] = np.where(t.Grad_Class > latest, "current", "graduated")
+    t["value"] = t[value]
+    return t.sort_values(["Grad_Class", "PGY"], ascending=[False, True]).reset_index(drop=True)
 
 
 def class_matrix(long: pd.DataFrame, value: str = "ile") -> pd.DataFrame:

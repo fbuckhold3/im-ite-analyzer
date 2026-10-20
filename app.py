@@ -11,6 +11,7 @@ from shiny import App, ui
 
 from modules.calculator import calculator_server, calculator_ui
 from modules.common import REPO, citation, footer, how_to_read
+from modules.program_tabs import classes_server, classes_ui, trends_server, trends_ui, yoy_server, yoy_ui
 from modules.resident import resident_server, resident_ui
 from modules.upload_align import upload_server, upload_ui
 
@@ -60,7 +61,17 @@ def about_panel():
 app_ui = ui.page_navbar(
     ui.nav_panel("Calculator", calculator_ui("calc"), value="calc"),
     ui.nav_panel("My ITE report", resident_ui("me"), value="me"),
-    ui.nav_panel("Program data", upload_ui("upload"), value="upload"),
+    ui.nav_panel(
+        "Program data",
+        ui.navset_underline(
+            ui.nav_panel("Upload & Align", upload_ui("upload"), value="upload"),
+            ui.nav_panel("Trends by level", trends_ui("trends"), value="trends"),
+            ui.nav_panel("Classes", classes_ui("classes"), value="classes"),
+            ui.nav_panel("Year over year", yoy_ui("yoy"), value="yoy"),
+            id="program_nav",
+        ),
+        value="program",
+    ),
     ui.nav_panel("About", about_panel(), value="about"),
     title="IM-ITE Analyzer",
     id="nav",
@@ -75,7 +86,10 @@ app_ui = ui.page_navbar(
 def server(input, output, session):
     calculator_server("calc")
     resident_server("me")
-    upload_server("upload")  # returns the session dataset; later tabs will read it
+    dataset = upload_server("upload")  # the session dataset every Program data sub-tab reads
+    trends_server("trends", dataset=dataset)
+    classes_server("classes", dataset=dataset)
+    yoy_server("yoy", dataset=dataset)
 
 
 app = App(app_ui, server)

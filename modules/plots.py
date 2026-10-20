@@ -10,6 +10,8 @@ from ite_core import nomogram
 PGY_COLOR = {1: "#0072B2", 2: "#E69F00", 3: "#009E73"}
 BAND = {"High": "rgba(213, 94, 0, 0.10)", "Intermediate": "rgba(230, 159, 0, 0.10)", "Low": "rgba(0, 158, 115, 0.08)"}
 POINTS_TRACE = 3  # index of the "your scores" trace
+# Vertical toolbar on the right edge, so it never covers titles (it is always visible on touch screens)
+MODEBAR = dict(orientation="v", bgcolor="rgba(255,255,255,0.7)")
 
 
 def nomogram_figure(cutoffs=nomogram.DEFAULT_CUTOFFS) -> go.Figure:
@@ -43,6 +45,7 @@ def nomogram_figure(cutoffs=nomogram.DEFAULT_CUTOFFS) -> go.Figure:
         margin=dict(l=55, r=20, t=10, b=50),
         height=380,
         template="plotly_white",
+        modebar=MODEBAR,
         xaxis=dict(title="ITE percent correct", range=[30, 95], dtick=10, ticksuffix="%"),
         yaxis=dict(title="Estimated probability of passing ABIM", range=[0, 1.02], tickformat=".0%"),
         legend=dict(orientation="h", yanchor="bottom", y=0.02, xanchor="right", x=0.99),
@@ -126,9 +129,176 @@ def area_percentile_figure(areas, strength_at: int = 60, focus_below: int = 35) 
         height=60 + 34 * len(d),
         margin=dict(l=10, r=30, t=44, b=45),
         template="plotly_white",
+        modebar=MODEBAR,
         xaxis=dict(title="Your national percentile (same PGY level)", range=[0, 104], dtick=10),
         yaxis=dict(title=None, automargin=True),
         legend=dict(orientation="h", yanchor="bottom", y=1.04, xanchor="right", x=1),
         font=dict(family="system-ui, -apple-system, Segoe UI, sans-serif", size=13),
+    )
+    return fig
+
+
+# ------------------------------------------------------------------ program trends
+FONT = dict(family="system-ui, -apple-system, Segoe UI, sans-serif", size=13)
+# Okabe-Ito order for classes, newest class = slot 1
+CLASS_COLORS = ["#0072B2", "#E69F00", "#009E73", "#CC79A7", "#56B4E9", "#D55E00", "#F0E442", "#000000"]
+
+LEVEL_METRICS = {
+    "ile": ("Mean percentile", "", True),
+    "med": ("Median percentile", "", True),
+    "ge50": ("% at or above the 50th percentile", "%", False),
+    "lt35": ("% below the 35th percentile", "%", False),
+    "pc": ("Mean percent correct", "%", False),
+    "pp_low": ("% in the Low-risk tier", "%", False),
+}
+
+
+def level_small_multiples(lv, metric: str = "ile"):
+    """PGY-1 / PGY-2 / PGY-3 panels, one bar per exam year. Small groups (n < 5) are faded and hatched."""
+    from plotly.subplots import make_subplots
+
+    label, suffix, is_pctile = LEVEL_METRICS[metric]
+    pgys = [p for p in (1, 2, 3) if p in set(lv.PGY)]
+    years = sorted(lv.Exam_Year.unique())
+    fig = make_subplots(
+        rows=1, cols=len(pgys), shared_yaxes=True, subplot_titles=[f"PGY-{p}" for p in pgys], horizontal_spacing=0.04
+    )
+    for i, p in enumerate(pgys, 1):
+        d = lv[lv.PGY == p].set_index("Exam_Year").reindex(years)
+        small = d.small_n.fillna(False).astype(bool)
+        fig.add_trace(
+            go.Bar(
+                x=[str(y) for y in years],
+                y=d[metric],
+                showlegend=False,
+                marker=dict(
+                    color=PGY_COLOR[p],
+                    opacity=[0.45 if s else 1 for s in small],
+                    pattern=dict(shape=["/" if s else "" for s in small]),
+                ),
+                text=[("" if v != v else f"{v:.0f}{suffix}") for v in d[metric]],
+                textposition="outside",
+                customdata=d[["n"]].fillna(0).astype(int).values,
+                hovertemplate=f"PGY-{p}, %{{x}}: %{{y:.1f}}{suffix} (n=%{{customdata[0]}})<extra></extra>",
+            ),
+            row=1,
+            col=i,
+        )
+        if is_pctile:
+            fig.add_hline(y=50, line=dict(color="#9aa0a6", dash="dot", width=1), row=1, col=i)
+    top = 100 if suffix == "%" and metric != "pc" else (100 if is_pctile else 85)
+    fig.update_yaxes(range=[0 if metric != "pc" else 40, top + 8], title_text=label, row=1, col=1)
+    fig.update_layout(
+        height=340,
+        margin=dict(l=55, r=15, t=40, b=35),
+        template="plotly_white",
+        modebar=MODEBAR,
+        font=FONT,
+        bargap=0.25,
+    )
+    return fig
+
+
+def class_trajectories_figure(t, value_label: str = "Mean percentile"):
+    """One line per graduating class across PGY-1 -> PGY-3. Current solid, graduated dashed; end labels."""
+    fig = go.Figure()
+    classes = list(dict.fromkeys(t.Grad_Class))  # newest first
+    for k, gc in enumerate(classes):
+        d = t[t.Grad_Class == gc].sort_values("PGY")
+        current = d.status.iloc[0] == "current"
+        color = CLASS_COLORS[k % len(CLASS_COLORS)]
+        fig.add_trace(
+            go.Scatter(
+                x=[f"PGY-{p}" for p in d.PGY],
+                y=d.value,
+                mode="lines+markers",
+                name=f"Class of {gc}",
+                line=dict(color=color, width=3 if current else 2, dash="solid" if current else "dash"),
+                marker=dict(size=9 if current else 7, color=color),
+                customdata=d[["n", "Exam_Year"]].values,
+                hovertemplate=(
+                    f"Class of {gc}, %{{x}} (%{{customdata[1]}}): %{{y:.1f}} · n=%{{customdata[0]}}<extra></extra>"
+                ),
+            )
+        )
+        last = d.iloc[-1]
+        if len(d) < 2:
+            continue  # single-point classes are identified by the legend (end labels would collide)
+        fig.add_annotation(
+            x=f"PGY-{int(last.PGY)}",
+            y=last.value,
+            text=f"  {gc}",
+            showarrow=False,
+            xanchor="left",
+            font=dict(color=color, size=12),
+        )
+    if "percentile" in value_label.lower():
+        fig.add_hline(y=50, line=dict(color="#9aa0a6", dash="dot", width=1))
+    fig.update_layout(
+        height=380,
+        margin=dict(l=55, r=60, t=10, b=40),
+        template="plotly_white",
+        modebar=MODEBAR,
+        font=FONT,
+        xaxis=dict(categoryorder="array", categoryarray=["PGY-1", "PGY-2", "PGY-3"]),
+        yaxis=dict(title=value_label),
+        legend=dict(title="Solid = current, dashed = graduated"),
+    )
+    return fig
+
+
+def yoy_scatter(pts, outcome: str = "percentile"):
+    """Last year vs this year for the same residents, coloured by current PGY; diagonal = no change."""
+    pre, cur, lab = (
+        ("ile_prev", "ile_cur", "percentile") if outcome == "percentile" else ("pc_prev", "pc_cur", "% correct")
+    )
+    fig = go.Figure()
+    for p in (2, 3):
+        d = pts[pts.PGY == p]
+        if d.empty:
+            continue
+        fig.add_trace(
+            go.Scatter(
+                x=d[pre],
+                y=d[cur],
+                mode="markers",
+                name=f"Now PGY-{p}",
+                marker=dict(
+                    size=10,
+                    color=PGY_COLOR[p],
+                    line=dict(color="#1a1a1a", width=0.8),
+                    symbol="circle" if p == 2 else "diamond",
+                ),
+                text=d.Name,
+                hovertemplate=f"%{{text}}<br>Last year %{{x:.0f}} → this year %{{y:.0f}} ({lab})<extra></extra>",
+            )
+        )
+    if outcome == "percentile":
+        lo, hi = 0, 100
+        for g in (20, 35):
+            fig.add_hline(y=g, line=dict(color="#d55e00", dash="dot", width=1))
+            fig.add_vline(x=g, line=dict(color="#d55e00", dash="dot", width=1))
+    else:
+        vals = list(pts[pre]) + list(pts[cur])
+        lo, hi = (min(vals) - 3, max(vals) + 3) if vals else (40, 90)
+    fig.add_trace(
+        go.Scatter(
+            x=[lo, hi],
+            y=[lo, hi],
+            mode="lines",
+            line=dict(color="#9aa0a6", width=1),
+            hoverinfo="skip",
+            showlegend=False,
+        )
+    )
+    fig.update_layout(
+        height=420,
+        margin=dict(l=55, r=15, t=10, b=50),
+        template="plotly_white",
+        modebar=MODEBAR,
+        font=FONT,
+        xaxis=dict(title=f"Last year's {lab}", range=[lo, hi]),
+        yaxis=dict(title=f"This year's {lab}", range=[lo, hi]),
+        legend=dict(orientation="h", yanchor="bottom", y=0.01, xanchor="right", x=0.99),
     )
     return fig

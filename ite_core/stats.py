@@ -22,6 +22,9 @@ def _year(w: pd.DataFrame, year: int | None) -> int:
 def _analysis_frame(w: pd.DataFrame, year: int | None = None) -> pd.DataFrame:
     """Residents with both this year's and last year's ITE, with generic column names."""
     y = _year(w, year)
+    if f"Pct_Correct_{y - 1}" not in w:  # only one exam year uploaded: nobody can be paired
+        cols = list(w.columns) + ["pc_cur", "pc_prev", "ile_cur", "ile_prev", "log_ans"]
+        return pd.DataFrame(columns=list(dict.fromkeys(cols)))
     s = w[w.dPct_1yr.notna()].copy()
     s["pc_cur"], s["pc_prev"] = s[f"Pct_Correct_{y}"], s[f"Pct_Correct_{y - 1}"]
     s["ile_cur"], s["ile_prev"] = s[f"Percentile_{y}"], s[f"Percentile_{y - 1}"]
@@ -30,11 +33,14 @@ def _analysis_frame(w: pd.DataFrame, year: int | None = None) -> pd.DataFrame:
     return s
 
 
-def paired_change(w: pd.DataFrame, pgy: int, year: int | None = None) -> dict:
-    """Same residents, last year -> this year, one PGY level. Wilcoxon signed-rank on percentile change."""
+def paired_change(w: pd.DataFrame, pgy: int, year: int | None = None, outcome: str = "percentile") -> dict:
+    """Same residents, last year -> this year, one PGY level. Wilcoxon signed-rank on the change.
+
+    outcome: 'percentile' (default; fair across years) or 'pct_correct' (rises with training by design).
+    """
     s = _analysis_frame(w, year)
     s = s[s.PGY == pgy]
-    d = s.dPctile_1yr.dropna()
+    d = (s.dPctile_1yr if outcome == "percentile" else s.dPct_1yr).dropna()
     p = stats.wilcoxon(d).pvalue if len(d) >= 2 and (d != 0).any() else np.nan
     return dict(
         pgy=pgy,
@@ -43,9 +49,18 @@ def paired_change(w: pd.DataFrame, pgy: int, year: int | None = None) -> dict:
         d_med=float(d.median()) if len(d) else np.nan,
         p=round(p, 3),
         d_pc=round(s.dPct_1yr.mean(), 1),
+        d_ile=round(s.dPctile_1yr.mean(), 1),
+        outcome=outcome,
         up=int((d >= 10).sum()),
         down=int((d <= -10).sum()),
     )
+
+
+def paired_points(w: pd.DataFrame, year: int | None = None) -> pd.DataFrame:
+    """One row per resident with both years: prior/current % correct and percentile, plus changes."""
+    s = _analysis_frame(w, year)
+    cols = ["ID", "Name", "PGY", "pc_prev", "pc_cur", "dPct_1yr", "ile_prev", "ile_cur", "dPctile_1yr"]
+    return s[cols].reset_index(drop=True)
 
 
 def _spear(s, a, b):

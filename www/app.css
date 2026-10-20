@@ -102,3 +102,10 @@ body { color: var(--ink); }
   .data-table { display: block; overflow-x: auto; white-space: nowrap; }
   .big-number { font-size: 2.2rem; }
 }
+
+/* Program data sub-tabs */
+.nav-underline { margin-bottom: 1rem; }
+.data-table .n { color: var(--ink-soft); font-size: 0.85em; }
+.data-table td.small { opacity: 0.6; }
+.small-flag { font-size: 0.72rem; font-weight: 600; color: var(--mid); margin-left: 0.25rem; }
+.yoy-card { border: 1px solid var(--rule); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 0.75rem; }

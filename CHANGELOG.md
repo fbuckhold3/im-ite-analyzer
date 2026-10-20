@@ -5,6 +5,18 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 ### Added
+- **Program data** sub-tabs reading the uploaded rosters:
+  - **Trends by level** — PGY-1/2/3 small multiples across exam years with a metric toggle (mean/median
+    percentile, % ≥50th, % <35th, mean % correct, % Low risk) and a value (n) table; groups under 5 hatched
+    and flagged.
+  - **Classes** — trajectory line per graduating class (current solid, graduated dashed, fixed colours,
+    end labels) and a class matrix with change from first to latest ITE; percentile / % correct toggle.
+  - **Year over year** — same-resident change per PGY with Wilcoxon test in plain language, and a prior-vs-
+    current scatter (diagonal, 20th/35th guides); % correct framed as an expected rise with training.
+- `history.class_trajectories()`, `small_n` flags; `stats.paired_points()`, `paired_change(outcome=)`.
+
+### Fixed
+- Paired analyses no longer fail when only one exam year is uploaded.
 - **My ITE report** tab: a resident uploads their ACP Examinee Performance Report PDF (plus earlier years and,
   optionally, their own MKSAP export) → pass estimate and tier, score needed for Low risk now and next year,
   content-area percentile chart and table (Strength ≥60th / Focus <35th), missed objectives grouped by area
