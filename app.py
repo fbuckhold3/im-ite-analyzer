@@ -12,6 +12,7 @@ from shiny import App, ui
 from modules.board import board_server, board_ui
 from modules.calculator import calculator_server, calculator_ui
 from modules.common import REPO, citation, footer, how_to_read
+from modules.home import home_server, home_ui
 from modules.items_tab import items_server, items_ui
 from modules.mksap_tab import mksap_server, mksap_ui
 from modules.program_tabs import classes_server, classes_ui, trends_server, trends_ui, yoy_server, yoy_ui
@@ -30,12 +31,14 @@ def about_panel():
             "In-Training Examination (IM-ITE®) results and MKSAP® question-bank use."
         ),
         ui.tags.ul(
-            ui.tags.li(ui.strong("Calculator"), " — estimated chance of passing ABIM from your percent correct."),
+            ui.tags.li(ui.strong("Quick estimate"), " — estimated chance of passing ABIM from your percent correct."),
             ui.tags.li(
                 ui.strong("My ITE report"),
                 " — upload your ACP score report for strengths, focus areas and missed objectives.",
             ),
-            ui.tags.li(ui.strong("Program data"), " — upload ACP roster files (and MKSAP) to analyze a whole program."),
+            ui.tags.li(
+                ui.strong("Program analysis"), " — upload ACP roster files (and MKSAP) to analyze a whole program."
+            ),
         ),
         how_to_read(),
         ui.h4("Source of the pass estimate"),
@@ -63,10 +66,11 @@ def about_panel():
 
 
 app_ui = ui.page_navbar(
-    ui.nav_panel("Calculator", calculator_ui("calc"), value="calc"),
-    ui.nav_panel("My ITE report", resident_ui("me"), value="me"),
+    ui.nav_panel("Home", home_ui(), value="home"),
+    ui.nav_panel("Quick estimate", calculator_ui("calc"), value="calc"),
+    ui.nav_panel("Resident report", resident_ui("me"), value="me"),
     ui.nav_panel(
-        "Program data",
+        "Program analysis",
         ui.navset_underline(
             ui.nav_panel("Upload & Align", upload_ui("upload"), value="upload"),
             ui.nav_panel("Trends by level", trends_ui("trends"), value="trends"),
@@ -92,6 +96,7 @@ app_ui = ui.page_navbar(
 
 
 def server(input, output, session):
+    home_server(input, session)
     calculator_server("calc")
     resident_server("me")
     dataset, program = upload_server("upload")  # session dataset + parsed Program Performance Report

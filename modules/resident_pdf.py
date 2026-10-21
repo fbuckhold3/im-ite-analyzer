@@ -1,8 +1,12 @@
 """Resident ITE report as a PDF (reportlab + static matplotlib charts). Built in memory; no files written.
 
 Two sources, one layout:
-  from_examinee(reports)      a resident's own ACP Examinee Performance Report(s) — full content
-  from_roster(ds, rid, ...)   the program's roster data (PD view) — no missed objectives or national means
+  from_examinee(reports, program=None)  a resident's own ACP Examinee Performance Report(s); with the program's
+                                        Performance Report, missed questions are ranked against national results
+  from_roster(ds, rid, ...)             the program's roster data (PD view) — no missed objectives or national means
+
+Layout: estimate → board-pass curve with next-year targets → content areas in three colour bands →
+biggest misses / notable wins (when available) → all missed objectives by area.
 """
 
 from __future__ import annotations
@@ -21,19 +25,21 @@ from reportlab.lib.units import inch
 from reportlab.platypus import Image, KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from ite_core import board, individual
-from ite_core.nomogram import DEFAULT_CUTOFFS, pct_for_prob
+from ite_core.nomogram import DEFAULT_CUTOFFS
 
 from . import static_charts
 
 INK, SOFT, RULE = colors.HexColor("#1f2328"), colors.HexColor("#57606a"), colors.HexColor("#d8dee4")
 TIER_COLOR = {"High": "#b3261e", "Intermediate": "#8a5a00", "Low": "#0b6e4f"}
-STANDING_COLOR = {"Strength": "#0b6e4f", "Focus": "#b3261e", "Typical": "#57606a"}
-STRENGTH_AT, FOCUS_BELOW = individual.STRENGTH_AT, individual.FOCUS_BELOW
+BAND_INK = {"Strength": "#0b6e4f", "Typical": "#8a5a00", "Focus": "#b3261e"}
+BAND_BG = {"Strength": "#dcf3ea", "Typical": "#fff3d6", "Focus": "#fde7e5"}
 
 _ss = getSampleStyleSheet()
 H1 = ParagraphStyle("h1", parent=_ss["Heading1"], fontSize=17, spaceAfter=2, textColor=INK)
 H2 = ParagraphStyle("h2", parent=_ss["Heading2"], fontSize=12.5, spaceBefore=10, spaceAfter=4, textColor=INK)
+H3 = ParagraphStyle("h3", parent=_ss["Heading3"], fontSize=10.5, spaceBefore=6, spaceAfter=2, textColor=INK)
 BODY = ParagraphStyle("body", parent=_ss["BodyText"], fontSize=9.5, leading=13, textColor=INK, alignment=TA_LEFT)
+SMALL = ParagraphStyle("small", parent=BODY, fontSize=8.5, leading=11)
 NOTE = ParagraphStyle("note", parent=BODY, fontSize=8, leading=10.5, textColor=SOFT)
 BIG = ParagraphStyle("big", parent=BODY, fontSize=26, leading=30, textColor=INK)
 
@@ -52,7 +58,7 @@ def _p(text, style=BODY):
     return Paragraph(text, style)
 
 
-def _table(rows, widths, header=True, zebra=False):
+def _table(rows, widths=None, header=True):
     t = Table(rows, colWidths=widths, repeatRows=1 if header else 0)
     style = [
         ("FONTSIZE", (0, 0), (-1, -1), 8.2),
@@ -73,14 +79,16 @@ def _table(rows, widths, header=True, zebra=False):
 
 
 # ------------------------------------------------------------------------------------- adapters
-def from_examinee(reports: list[dict], cutoffs=DEFAULT_CUTOFFS) -> dict:
-    """One resident's parsed Examinee Performance Report(s), oldest first."""
+def from_examinee(reports: list[dict], cutoffs=DEFAULT_CUTOFFS, program: dict | None = None) -> dict:
+    """One resident's parsed Examinee Performance Report(s), oldest first; optional program report for ranking."""
     a = individual.analyze_examinee(reports[-1], cutoffs)
+    q = individual.rank_questions(reports[-1], program) if program is not None else None
     return dict(
         summary=a,
         areas=a["areas"],
         history=individual.history(reports, cutoffs),
         missed=a["missed"],
+        ranking=q,
         source="ACP Examinee Performance Report",
         prepared_by_program=False,
         mksap=None,
@@ -95,10 +103,6 @@ def from_roster(ds, rid: str, cutoffs=DEFAULT_CUTOFFS) -> dict:
     areas = board.resident_areas(ds.rosters.long, rid)
     if areas is not None:
         areas = areas.assign(national_sd=float("nan"))
-    strengths = [] if areas is None else areas[areas.standing == "Strength"].area.tolist()
-    focus = [] if areas is None else areas[areas.standing == "Focus"].area.tolist()
-    if areas is not None and not focus:
-        focus = areas.sort_values("percentile").head(2).area.tolist()
     summary = dict(
         name=r.Name,
         exam_year=cy,
@@ -108,10 +112,7 @@ def from_roster(ds, rid: str, cutoffs=DEFAULT_CUTOFFS) -> dict:
         pass_prob=r[f"Prob_{cy}"],
         risk_tier=r.Tier,
         pct_needed_low_now=r.Needed_Low,
-        pct_needed_low_next=round(pct_for_prob(cutoffs[1], pgy + 1), 1) if pgy < 3 else None,
         pgy_note=None,
-        strengths=strengths,
-        focus_areas=focus,
         hvc=[],
     )
     mk = None
@@ -122,36 +123,103 @@ def from_roster(ds, rid: str, cutoffs=DEFAULT_CUTOFFS) -> dict:
         areas=areas,
         history=board.resident_history(ds.rosters.long, rid, cutoffs),
         missed=None,
+        ranking=None,
         source="program ITE rosters",
         prepared_by_program=True,
         mksap=mk,
     )
 
 
+# ------------------------------------------------------------------------------------- sections
+def _bands(areas, width):
+    """Three colour bands (50th+, 25th-49th, below 25th), each area with percentile and % correct."""
+    keys = ("Strength", "Typical", "Focus")
+    cells = []
+    for key in keys:
+        d = areas[areas.standing == key].sort_values("percentile", ascending=False)
+        lines = [f'<font color="{BAND_INK[key]}"><b>{individual.BAND_LABEL[key]}</b></font>']
+        for r in d.itertuples():
+            n_missed = getattr(r, "n_missed", None)
+            extra = f" · {int(n_missed)} missed" if n_missed is not None and pd.notna(n_missed) and n_missed else ""
+            lines.append(
+                f"<b>{escape(r.area)}</b><br/><font size=8 color='#57606a'>{_f(r.percentile)}th percentile · "
+                f"{_f(r.pct_correct)}% correct{extra}</font>"
+            )
+        if len(lines) == 1:
+            lines.append("<font color='#57606a'>None</font>")
+        cells.append([_p(x, SMALL) for x in lines])
+    t = Table([cells], colWidths=[width / 3] * 3)
+    t.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                *[("BACKGROUND", (i, 0), (i, 0), colors.HexColor(BAND_BG[k])) for i, k in enumerate(keys)],
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("LINEAFTER", (0, 0), (1, 0), 3, colors.white),
+            ]
+        )
+    )
+    return t
+
+
+def _ranked(q, width):
+    def rows(df, ink):
+        out = [["", "Objective", "Content area", f"National ({q['pgy_label']})"]]
+        for i, r in enumerate(df.itertuples(), 1):
+            hvc = " <font color='#0b5cad'>(HVC)</font>" if r.hvc else ""
+            out.append(
+                [
+                    str(i),
+                    _p(escape(r.objective) + hvc, SMALL),
+                    _p(f"<font size=7.5 color='#57606a'>{escape(r.area)}</font>", SMALL),
+                    _p(f'<font color="{ink}"><b>{int(r.national)}%</b></font> got it right', SMALL),
+                ]
+            )
+        t = _table(out, widths=[0.25 * inch, width * 0.55, width * 0.22, width * 0.23 - 0.25 * inch])
+        t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+        return t
+
+    return [
+        _p("Your questions compared with national results", H2),
+        _p(
+            f"Biggest misses ({len(q['misses'])}) — questions you missed that most residents at your level got "
+            "right; usually the most fixable gaps.",
+            H3,
+        ),
+        rows(q["misses"], "#b3261e"),
+        Spacer(1, 4),
+        _p(f"Notable wins ({len(q['wins'])}) — the hardest questions you got right.", H3),
+        rows(q["wins"], "#0b6e4f"),
+        _p(
+            f"Matched {q['matched']} of {q['missed_total']} missed objectives to the program's Performance Report.",
+            NOTE,
+        ),
+    ]
+
+
 # ----------------------------------------------------------------------------------------- build
 def resident_pdf(content: dict, cutoffs=DEFAULT_CUTOFFS) -> bytes:
     s, areas, hist, missed = content["summary"], content["areas"], content["history"], content["missed"]
     width = letter[0] - 1.4 * inch
+    pgy = int(s["pgy"])
     story = [
         _p(f"{escape(str(s.get('name') or 'Resident'))}", H1),
         _p(
-            f"{s.get('exam_year') or ''} ACP Internal Medicine In-Training Examination · PGY-{s['pgy']} · "
+            f"{s.get('exam_year') or ''} ACP Internal Medicine In-Training Examination · PGY-{pgy} · "
             f"from the {escape(content['source'])}",
             NOTE,
         ),
     ]
     if content["prepared_by_program"]:
         story.append(_p("Prepared by the residency program from its ITE roster files.", NOTE))
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
 
-    # 1 · Board-pass estimate
+    # 1 · Estimate + curve with next-year targets
     tier = s.get("risk_tier")
     tier_txt = f'<font color="{TIER_COLOR.get(tier, "#57606a")}"><b>{tier} risk</b></font>' if tier else "—"
-    nxt = (
-        f" Next year (PGY-{s['pgy'] + 1}) it takes about {_f(s['pct_needed_low_next'], 1)}%."
-        if s.get("pct_needed_low_next")
-        else ""
-    )
     est = Table(
         [
             [
@@ -163,15 +231,10 @@ def resident_pdf(content: dict, cutoffs=DEFAULT_CUTOFFS) -> bytes:
                 [
                     _p(f"<b>{_f(s.get('pct_correct'))}%</b> correct", BODY),
                     _p(f"National percentile <b>{_f(s.get('percentile'))}</b>", BODY),
-                    _p(
-                        f"Low risk at PGY-{min(s['pgy'], 3)} starts at about "
-                        f"{_f(s.get('pct_needed_low_now'), 1)}% correct.{nxt}",
-                        NOTE,
-                    ),
                 ],
             ]
         ],
-        colWidths=[width * 0.42, width * 0.58],
+        colWidths=[width * 0.5, width * 0.5],
     )
     est.setStyle(
         TableStyle(
@@ -183,17 +246,52 @@ def resident_pdf(content: dict, cutoffs=DEFAULT_CUTOFFS) -> bytes:
             ]
         )
     )
+    targets = individual.next_year_targets(pgy, cutoffs)
+    if targets:
+        txt = (
+            f"To be at {int(cutoffs[1] * 100)}% or higher next year (PGY-{targets[0][0]}), you need about "
+            f"<b>{targets[0][1]:.1f}%</b> correct ({individual.target_gap_phrase(s.get('pct_correct'), targets[0][1])})"
+        )
+        if len(targets) > 1:
+            txt += f"; at PGY-{targets[1][0]}, about <b>{targets[1][1]:.1f}%</b>"
+        target_par = _p(txt + ".", BODY)
+    else:
+        target_par = _p(
+            f"Low risk at PGY-{min(pgy, 3)} starts at about {_f(s.get('pct_needed_low_now'), 1)}% correct.", BODY
+        )
+    pts = list(zip(hist.PGY, hist.Pct_Correct, hist.Pass_Prob, strict=True)) if hist is not None else []
     story += [
         _p("Board-pass estimate", H2),
         est,
-        Spacer(1, 3),
+        Spacer(1, 4),
+        target_par,
+        Image(
+            io.BytesIO(static_charts.nomogram_png(pts, cutoffs, targets=targets)),
+            width=width * 0.82,
+            height=width * 0.82 * 3.2 / 6.0,
+        ),
         _p(
-            "Approximates the curves in McDonald FS, et al. <i>Acad Med.</i> 2020;95(9):1388–1395 "
-            "(doi:10.1097/ACM.0000000000003382): 2014–2015 cohorts, percent correct only, a population-level "
-            "association — not a prediction for any one person. Educational use only.",
+            "Stars mark the score needed at each later PGY level to reach the Low-risk cutoff. Estimates approximate "
+            "McDonald FS, et al. <i>Acad Med.</i> 2020;95(9):1388–1395 (doi:10.1097/ACM.0000000000003382): "
+            "2014–2015 cohorts, percent correct only, a population-level association — not a prediction for any one "
+            "person. Educational use only.",
             NOTE,
         ),
     ]
+    if hist is not None and len(hist) > 1:
+        rows = [["Exam", "Level", "% correct", "Percentile", "Pass estimate", "Tier"]]
+        rows += [
+            [
+                str(int(r.Exam_Year)) if pd.notna(r.Exam_Year) else "—",
+                f"PGY-{int(r.PGY)}",
+                f"{_f(r.Pct_Correct)}%",
+                _f(r.Percentile),
+                _prob(r.Pass_Prob),
+                r.Risk_Tier or "—",
+            ]
+            for r in hist.itertuples()
+        ]
+        story.append(_table(rows))
     if s.get("pgy_note"):
         story.append(_p(escape(s["pgy_note"]), NOTE))
     if content.get("mksap"):
@@ -205,140 +303,62 @@ def resident_pdf(content: dict, cutoffs=DEFAULT_CUTOFFS) -> bytes:
             )
         )
 
-    # 2 · Content areas
+    # 2 · Content areas in colour bands
     if areas is not None and len(areas):
-        strengths = ", ".join(s.get("strengths") or []) or f"none at or above the {STRENGTH_AT}th percentile"
-        story += [
-            _p("Content areas: your national percentile", H2),
-            _p(
-                f"<b>Strengths:</b> {escape(strengths)}<br/><b>Focus areas:</b> "
-                f"{escape(', '.join(s.get('focus_areas') or []))}",
-                BODY,
-            ),
-            Image(
-                io.BytesIO(static_charts.area_percentile_png(areas)),
-                width=width,
-                height=width * (0.25 * len(areas) + 0.8) / 7.0,
-            ),
-        ]
-        has_nat = "national_mean" in areas and areas.national_mean.notna().any()
-        head = ["Content area", "You", *(["National mean", "SD"] if has_nat else []), "Percentile", "Standing"]
-        if "n_missed" in areas:
-            head.append("Missed")
-        rows = [head]
-        for r in areas.itertuples():
-            row = [r.area, f"{_f(r.pct_correct)}%"]
-            if has_nat:
-                row += [f"{_f(r.national_mean)}%", _f(r.national_sd)]
-            row += [_f(r.percentile), r.standing]
-            if "n_missed" in areas:
-                row.append(str(int(r.n_missed)))
-            rows.append(row)
-        t = _table(rows, None)
-        t.setStyle(
-            TableStyle(
-                [
-                    (
-                        "TEXTCOLOR",
-                        (head.index("Standing"), i),
-                        (head.index("Standing"), i),
-                        colors.HexColor(STANDING_COLOR[rows[i][head.index("Standing")]]),
-                    )
-                    for i in range(1, len(rows))
-                ]
-            )
+        hvc = (s.get("hvc") or [None])[0]
+        hvc_txt = (
+            f"High Value Care (overlaps the areas above): {hvc['percentile']}th percentile, "
+            f"{hvc['pct_correct']}% correct. "
+            if hvc
+            else ""
         )
-        story += [  # the table may continue onto the next page (header row repeats)
-            t,
-            _p(
-                f"Strength = {STRENGTH_AT}th percentile or above; Focus = below the "
-                f"{FOCUS_BELOW}th (or the two lowest areas).",
-                NOTE,
-            ),
-        ]
-        if s.get("hvc"):
-            h = s["hvc"][0]
-            story.append(
-                _p(
-                    f"High Value Care (overlaps the areas above): {h['pct_correct']}% correct, "
-                    f"{h['percentile']}th percentile.",
-                    NOTE,
-                )
-            )
-    else:
-        story.append(_p("Content-area percentiles are not available from this roster (older ACP layout).", NOTE))
-
-    # 3 · Over time
-    if hist is not None and len(hist):
-        rows = [["Exam", "Level", "% correct", "Percentile", "Pass estimate", "Tier"]]
-        for r in hist.itertuples():
-            rows.append(
-                [
-                    str(int(r.Exam_Year)) if pd.notna(r.Exam_Year) else "—",
-                    f"PGY-{int(r.PGY)}",
-                    f"{_f(r.Pct_Correct)}%",
-                    _f(r.Percentile),
-                    _prob(r.Pass_Prob),
-                    r.Risk_Tier or "—",
-                ]
-            )
         story.append(
             KeepTogether(
                 [
-                    _p("Over time" if len(hist) > 1 else "On the board-pass curves", H2),
-                    Image(
-                        io.BytesIO(
-                            static_charts.nomogram_png(
-                                list(zip(hist.PGY, hist.Pct_Correct, hist.Pass_Prob, strict=True)), cutoffs
-                            )
-                        ),
-                        width=width * 0.85,
-                        height=width * 0.85 * 3.2 / 6.0,
+                    _p("Content areas: your national percentile", H2),
+                    _bands(areas, width),
+                    _p(
+                        hvc_txt
+                        + "Percentile = rank among U.S. residents at the same PGY level that year (50 = middle).",
+                        NOTE,
                     ),
-                    _table(rows, None),
                 ]
             )
         )
+    else:
+        story.append(_p("Content-area percentiles are not available from this roster (older ACP layout).", NOTE))
 
-    # 4 · Missed objectives
-    if missed is not None:
+    # 3 · Ranked questions
+    if content.get("ranking"):
+        story += _ranked(content["ranking"], width)
+
+    # 4 · All missed objectives
+    if missed is not None and len(missed):
+        band = areas.set_index("area").standing if areas is not None else pd.Series(dtype=str)
         story += [
-            Spacer(1, 6),
-            _p(f"Missed objectives ({len(missed)})", H2),
+            _p(f"All missed objectives ({len(missed)})", H2),
             _p(
-                "ACP lists the learning objective behind each item you missed — not the question itself. Focus "
-                "areas first. (HVC) = also counts toward High Value Care.",
+                "ACP lists the learning objective behind each question you missed — not the question itself. "
+                "Weakest areas first. (HVC) = also counts toward High Value Care.",
                 NOTE,
             ),
         ]
-        standing = areas.set_index("area").standing if areas is not None else pd.Series(dtype=str)
-        order = sorted(
-            missed.area.unique(), key=lambda a: ({"Focus": 0, "Typical": 1, "Strength": 2}.get(standing.get(a), 1), a)
-        )
+        order = sorted(missed.area.unique(), key=lambda a: (individual.BAND_ORDER.get(band.get(a), 1), a))
         for area in order:
             g = missed[missed.area == area]
+            key = band.get(area)
             items = "".join(
                 f"• {escape(o)}{' (HVC)' if h else ''}<br/>" for o, h in zip(g.objective, g.hvc, strict=True)
             )
-            story.append(
-                KeepTogether(
-                    [
-                        _p(
-                            f"<b>{escape(area)}</b> — {len(g)} missed"
-                            + (f" · {standing.get(area)}" if standing.get(area) in ("Focus", "Strength") else ""),
-                            BODY,
-                        ),
-                        _p(items, BODY),
-                        Spacer(1, 4),
-                    ]
-                )
-            )
+            head = f"<b>{escape(area)}</b> — {len(g)} missed"
+            if key:
+                head += f' · <font color="{BAND_INK[key]}">{individual.BAND_LABEL[key]}</font>'
+            story.append(KeepTogether([_p(head, BODY), _p(items, SMALL), Spacer(1, 3)]))
     elif content["prepared_by_program"]:
         story.append(
             _p("Missed objectives come from the resident's own ACP score report and are not in the roster files.", NOTE)
         )
 
-    # Sources
     generated = dt.date.today().isoformat()
 
     def footer(canvas, doc):

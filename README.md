@@ -13,10 +13,10 @@ use, for internal medicine residents and program directors.
 | For | Upload | Get |
 |---|---|---|
 | Anyone | nothing — type a % correct and PGY (or all three years) | Estimated probability of passing ABIM, risk tier, the score needed for low risk |
-| Residents | your ACP Examinee Performance Report (PDF) | Pass estimate, strengths and focus areas, missed objectives by content area, trajectory across years — and a PDF to keep or share with your coach |
+| Residents | your ACP Examinee Performance Report (PDF) | Pass estimate with next-year targets, content areas in three percentile bands, biggest misses and wins vs national (add your program's Performance Report), trajectory across years — and a PDF to keep or share with your coach |
 | Program directors | ACP roster files (any years), Program Performance Report, MKSAP program export ([how to get it](docs/MKSAP_EXPORT.md)) | Trends by PGY level and class, same-resident change, pass estimates, MKSAP-vs-ITE analysis, item-level gaps, HTML reports, and all data in one Excel workbook |
 
-Status: **in development** — the Calculator, My ITE report (resident self-analysis) and Program data →
+Status: **in development** — a Home page with three entry cards, the Quick estimate, Resident report (resident self-analysis) and Program data →
 Upload & Align, Trends by level, Classes, Year over year, Board pass, MKSAP, Item gaps and Reports tabs
 work. The app is an analyzer only — it does not split score reports or email residents.
 See [docs/REVISION_SPEC.md](docs/REVISION_SPEC.md) and [CHANGELOG.md](CHANGELOG.md).

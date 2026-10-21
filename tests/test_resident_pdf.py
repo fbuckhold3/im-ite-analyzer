@@ -35,12 +35,13 @@ def test_pdf_from_score_report():
         "Sample, Alex",
         "Board-pass estimate",
         "Low risk",
-        "Missed objectives (11)",
+        "All missed objectives (11)",
         "Infectious Diseases",
         "Select antibiotics for an invented infection.",
         "(HVC)",
         "McDonald",
-        "Over time",
+        "To be at 90% or higher next year (PGY-3)",
+        "50th percentile and above",
     ):
         assert s in text, s
     assert RP.pdf_filename(content) == "ITE2026_Sample__Alex.pdf"
@@ -95,3 +96,9 @@ def test_charts_are_thread_safe():
     for t in threads:
         t.join()
     assert not errors and len(out) == 6 and all(png.startswith(b"\x89PNG") for png in out)
+
+
+def test_pdf_with_program_report_ranks_questions():
+    content = RP.from_examinee(demo.sample_examinee_reports(), program=demo.sample_resident_program_report())
+    _, text = _text(RP.resident_pdf(content))
+    assert "Biggest misses (11)" in text and "Notable wins (10)" in text and "got it right" in text

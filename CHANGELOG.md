@@ -5,6 +5,16 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 ### Added
+- **Home** page with three entry cards (Quick estimate, Resident report, Program analysis), each saying what to
+  bring and what you get.
+- **Resident report**: board-pass curve directly under the estimate with next-year targets (the % correct needed
+  next year for ≥90% pass probability; not shown for PGY-3); content areas in three colored percentile bands
+  (≥50th, 25th–49th, <25th); optional Program Performance Report upload ranks the resident's 20 biggest misses
+  and 10 notable wins against national % correct. Same content in the resident PDF.
+- **PD report design**: header band with the program name, summary tiles (residents tested, PGY-2/3 in Low
+  risk, watch list or suppressed below-Low count, mean percentile change, MKSAP effect, red-flag items), section
+  cards with a one-line takeaway, colored tier/flag badges, tier distribution bars (identified report only),
+  larger chart text and side-by-side charts on wide screens. Print layout and suppression rules unchanged.
 - **Resident PDF** (US Letter, 2–6 pages): estimate and tier, content-area chart and table, trajectory with the
   nomogram, missed objectives. Download from **My ITE report** (from the resident's own score report) or from the
   **Board pass** resident detail (from roster data; no missed objectives or national means, labelled as prepared
@@ -25,6 +35,10 @@ versions follow [Semantic Versioning](https://semver.org/).
   points). `modules/report_builder.py`.
 
 ### Changed
+- **MKSAP matching** on Upload & Align redesigned: residents needing review come first, one row each with
+  Confirm / account picker / "No MKSAP account"; choosing an account already linked to someone else moves it and
+  sends that resident back for review; automatic matches and unlinked accounts are collapsed below.
+- Resident area bands are now 50th / 25th percentile (were 60th / 35th with a "two weakest" fallback).
 - Scope: the app is an analyzer only; splitting score reports and emailing residents are out of scope.
 
 ### Security

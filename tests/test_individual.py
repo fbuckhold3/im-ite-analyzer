@@ -32,8 +32,9 @@ def test_history_and_grouping():
 
 def test_analysis_outputs():
     a = individual.analyze_examinee(demo.sample_examinee_reports()[-1])
-    assert a["strengths"] == ["General Internal Medicine", "Rheumatology"]
-    assert set(a["focus_areas"]) == {"Neurology", "Infectious Diseases", "Endocrinology"}
+    # bands: 50th+ / 25th-49th / below 25th (by national percentile)
+    assert a["strengths"] == ["General Internal Medicine", "Rheumatology", "Gastroenterology", "Geriatric Medicine"]
+    assert set(a["focus_areas"]) == {"Infectious Diseases", "Endocrinology"}
     assert a["missed"].hvc.sum() == 2 and a["pgy_note"] is None
     assert a["pct_needed_low_next"] == 65.1
 
@@ -64,3 +65,26 @@ def test_mksap_columns_from_program_sections():
     t = a["areas"].set_index("area")
     assert 0 <= t.loc["Infectious Diseases", "mksap_pct_done"] <= 100
     assert "High Value Care" not in t.index
+
+
+def test_next_year_targets_and_wording():
+    assert individual.next_year_targets(1) == [(2, 59.7), (3, 65.1)]
+    assert individual.next_year_targets(2) == [(3, 65.1)]
+    assert individual.next_year_targets(3) == []
+    assert individual.target_gap_phrase(56, 59.7) == "3.7 points more than this year's 56%"
+    assert individual.target_gap_phrase(67, 65.1) == "you're already 1.9 points above it"
+
+
+def test_rank_questions_against_program_report():
+    rep = demo.sample_examinee_reports()[-1]
+    q = individual.rank_questions(rep, demo.sample_resident_program_report())
+    assert q["matched"] == q["missed_total"] == 11 and q["pgy_label"] == "PGY-2"
+    assert list(q["misses"].national) == sorted(q["misses"].national, reverse=True)  # most-national-correct first
+    assert list(q["wins"].national) == sorted(q["wins"].national) and len(q["wins"]) == 10
+    missed = set(rep["missed"].objective)
+    assert set(q["misses"].objective) <= missed and not (set(q["wins"].objective) & missed)
+
+
+def test_rank_questions_needs_same_exam_year():
+    rep = dict(demo.sample_examinee_reports()[-1], exam_year=2025)
+    assert individual.rank_questions(rep, demo.sample_resident_program_report()) is None

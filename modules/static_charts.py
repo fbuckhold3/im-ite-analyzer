@@ -13,6 +13,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 
 from ite_core import nomogram
+from ite_core.individual import BAND_LABEL
 
 from .plots import PGY_COLOR, STANDING_COLOR
 
@@ -53,7 +54,7 @@ def area_percentile_png(areas, strength_at: int = 60, focus_below: int = 35, wid
                 color=STANDING_COLOR[standing],
                 edgecolor=INK,
                 linewidth=0.5,
-                label=standing,
+                label=BAND_LABEL[standing],
                 zorder=3,
             )
     for x, v in zip(d.percentile, y, strict=True):
@@ -69,7 +70,7 @@ def area_percentile_png(areas, strength_at: int = 60, focus_below: int = 35, wid
     return _png(fig)
 
 
-def nomogram_png(points, cutoffs=nomogram.DEFAULT_CUTOFFS, width_in: float = 6.0) -> bytes:
+def nomogram_png(points, cutoffs=nomogram.DEFAULT_CUTOFFS, width_in: float = 6.0, targets=()) -> bytes:
     """The three PGY curves with tier bands and the resident's points. points: iterable of (pgy, pct, prob)."""
     fig = Figure(figsize=(width_in, 3.2))
     ax = fig.add_subplot()
@@ -85,6 +86,19 @@ def nomogram_png(points, cutoffs=nomogram.DEFAULT_CUTOFFS, width_in: float = 6.0
         if pct is None or prob is None or prob != prob:
             continue
         ax.scatter([pct], [prob], s=60, color=PGY_COLOR[min(3, max(1, int(pgy)))], edgecolor=INK, linewidth=1, zorder=4)
+    for pgy, pct in targets:  # where each later PGY curve reaches the Low-risk cutoff
+        ax.scatter([pct], [lo], s=150, marker="*", color=PGY_COLOR[pgy], edgecolor=INK, linewidth=0.8, zorder=5)
+        ax.annotate(
+            f"PGY-{pgy}: {pct:.1f}%",
+            (pct, lo),
+            xytext=(6, -12),
+            textcoords="offset points",
+            fontsize=8,
+            color=INK,
+            fontweight="bold",
+        )
+    if targets:
+        ax.axhline(lo, color="#0b6e4f", linestyle=":", linewidth=1, zorder=1)
     ax.set_xlim(30, 95)
     ax.set_ylim(0, 1.02)
     ax.yaxis.set_major_formatter(lambda v, _: f"{v:.0%}")

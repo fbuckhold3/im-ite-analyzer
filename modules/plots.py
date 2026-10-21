@@ -5,6 +5,7 @@ from __future__ import annotations
 import plotly.graph_objects as go
 
 from ite_core import nomogram
+from ite_core.individual import BAND_LABEL
 
 # Okabe-Ito colours: distinguishable with common colour-vision deficiencies
 PGY_COLOR = {1: "#0072B2", 2: "#E69F00", 3: "#009E73"}
@@ -132,7 +133,7 @@ def area_percentile_figure(areas, strength_at: int = 60, focus_below: int = 35) 
                 x=s.percentile,
                 y=s.area,
                 mode="markers+text",
-                name=standing,
+                name=BAND_LABEL[standing],
                 text=[f"{int(v)}" for v in s.percentile],
                 textposition="middle right",
                 marker=dict(
@@ -527,4 +528,27 @@ def area_ranks_figure(ranks):
         yaxis=dict(automargin=True),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
+    return widget_safe(fig)
+
+
+def add_targets(fig, targets, cutoffs=nomogram.DEFAULT_CUTOFFS):
+    """Mark where each later PGY curve reaches the Low-risk cutoff: [(pgy, pct_needed), ...]."""
+    if not targets:
+        return widget_safe(fig)
+    fig.add_trace(
+        go.Scatter(
+            x=[t[1] for t in targets],
+            y=[cutoffs[1]] * len(targets),
+            mode="markers+text",
+            name="Next-year targets",
+            text=[f"PGY-{p}: {pct:.1f}%" for p, pct in targets],
+            textposition="bottom right",
+            textfont=dict(size=12, color="#1a1a1a"),
+            marker=dict(
+                size=14, symbol="star", color=[PGY_COLOR[p] for p, _ in targets], line=dict(color="#1a1a1a", width=1)
+            ),
+            hovertemplate="To reach Low risk at %{text}<extra></extra>",
+        )
+    )
+    fig.add_hline(y=cutoffs[1], line=dict(color="#0b6e4f", dash="dot", width=1))
     return widget_safe(fig)

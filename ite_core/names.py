@@ -215,3 +215,31 @@ def confirm_tier(crosswalk: pd.DataFrame, tier: str) -> pd.DataFrame:
     cw = crosswalk.copy()
     cw.loc[(cw.tier == tier) & cw.mksap_key.notna(), "confirmed_by_user"] = True
     return cw
+
+
+def reassign(crosswalk: pd.DataFrame, acp_id: str, mksap_key: str | None, mksap_people: pd.DataFrame) -> pd.DataFrame:
+    """Like set_match, but if the account already belongs to another resident, take it from them (their row goes
+    back to Unmatched and unreviewed). The person reviewing decides; they see the other row change."""
+    cw = crosswalk.copy()
+    if mksap_key is not None:
+        other = cw.index[(cw.mksap_key == mksap_key) & (cw.acp_id != acp_id)]
+        if len(other):
+            cw.loc[other, ["mksap_key", "mksap_last", "mksap_first"]] = None
+            cw.loc[other, "tier"] = "Unmatched"
+            cw.loc[other, "confirmed_by_user"] = False
+    return set_match(cw, acp_id, mksap_key, mksap_people)
+
+
+def candidate_accounts(crosswalk: pd.DataFrame, mksap_people: pd.DataFrame, acp_id: str) -> pd.DataFrame:
+    """MKSAP accounts to offer for one resident, most likely first: same surname token, then same first initial,
+    then the rest; accounts already linked to someone else come last (choosing one moves it)."""
+    row = crosswalk[crosswalk.acp_id == acp_id].iloc[0]
+    lt, ft = split_ite_name(row.ite_name)
+    ppl = mksap_people[["mk_key", "mk_last", "mk_first"]].copy()
+    owners = crosswalk.dropna(subset=["mksap_key"]).set_index("mksap_key").ite_name
+    ppl["linked_to"] = ppl.mk_key.map(owners)
+    ppl.loc[ppl.mk_key == row.mksap_key, "linked_to"] = None
+    surname = ppl.mk_last.map(lambda x: bool(set(norm_tokens(x)) & set(lt)))
+    initial = ppl.mk_first.map(lambda x: bool(ft) and first_agrees(ft, norm_tokens(x)) is not None)
+    ppl["score"] = surname * 2 + initial * 1 - ppl.linked_to.notna() * 4
+    return ppl.sort_values(["score", "mk_last", "mk_first"], ascending=[False, True, True]).reset_index(drop=True)

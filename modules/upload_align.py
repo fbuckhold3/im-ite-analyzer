@@ -299,30 +299,29 @@ def upload_server(input, output, session):
         )
 
     # ----------------------------------------------------------------- match
+    # Each resident row carries its own controls (Confirm / pick an account / No MKSAP account). Plain HTML controls
+    # send one event, {id, action, key}, so nothing has to stay in sync between separate dropdowns.
+    def _row_js(acp_id: str, action: str, key_expr: str = "null") -> str:
+        return (
+            f"Shiny.setInputValue('{session.ns('row_action')}', {{id: '{acp_id}', action: '{action}', "
+            f"key: {key_expr}, n: Math.random()}}, {{priority: 'event'}})"
+        )
+
     @render.ui
     def match_section():
         r, (mk, _) = rosters(), mksap()
         if r is None or r.current_year is None or mk is None:
             return None
         return ui.card(
-            ui.card_header(f"3 · Match {r.current_year} residents to MKSAP accounts"),
+            ui.card_header(f"3 · Link {r.current_year} residents to their MKSAP accounts"),
             ui.p(
-                "MKSAP exports have no ACP ID, so residents are matched by name: same surname and the same first "
-                "name or initial. Check anything not marked Exact.",
+                "MKSAP exports have no ACP ID, so residents are matched by name (same surname and the same first name "
+                "or initial). Review anything listed under “Needs your review”. Residents without an MKSAP account "
+                "are fine — choose “No MKSAP account”.",
                 class_="hint",
             ),
             ui.output_ui("match_summary"),
-            ui.layout_columns(
-                ui.div(ui.output_data_frame("match_table")),
-                ui.div(
-                    ui.output_ui("edit_panel"),
-                    ui.hr(),
-                    ui.h6("MKSAP accounts with no matching resident"),
-                    ui.p("Usually graduates, faculty or other learners.", class_="hint"),
-                    ui.output_data_frame("unmatched_table"),
-                ),
-                col_widths=(7, 5),
-            ),
+            ui.output_ui("review_rows"),
             ui.card_footer(
                 ui.download_button("download_cw", "Download crosswalk (.csv)", class_="btn-sm"),
                 ui.span(" Save it and upload it next time to keep your decisions.", class_="hint"),
@@ -334,80 +333,163 @@ def upload_server(input, output, session):
         cw = crosswalk.get()
         if cw is None:
             return None
-        counts = cw.tier.value_counts()
-        chips = [ui.span(f"{counts.get(t, 0)} {t}", class_=f"chip chip-{t.lower()}") for t in TIER_ORDER]
-        confirmed = int(cw.confirmed_by_user.sum())
-        return ui.div(*chips, ui.span(f"{confirmed} reviewed by you", class_="chip"), class_="chip-row")
-
-    def _review_frame(cw: pd.DataFrame) -> pd.DataFrame:
-        cur = rosters().long
-        pgy = cur[cur.Exam_Year == rosters().current_year].set_index("ID").PGY
-        out = pd.DataFrame(
-            {
-                "Resident": cw.ite_name,
-                "PGY": cw.acp_id.map(pgy),
-                "MKSAP account": [
-                    f"{a}, {b}" if isinstance(a, str) else "—"
-                    for a, b in zip(cw.mksap_last, cw.mksap_first, strict=True)
-                ],
-                "Match": cw.tier,
-                "Reviewed": cw.confirmed_by_user.map({True: "yes", False: ""}),
-            }
+        need = int((~cw.confirmed_by_user & (cw.tier != "Exact")).sum())
+        auto = int((~cw.confirmed_by_user & (cw.tier == "Exact")).sum())
+        done = int(cw.confirmed_by_user.sum())
+        linked = int(cw.mksap_key.notna().sum())
+        return ui.div(
+            ui.span(f"{need} need your review", class_="chip chip-ambiguous" if need else "chip chip-exact"),
+            ui.span(f"{auto} matched automatically", class_="chip chip-exact"),
+            ui.span(f"{done} reviewed by you", class_="chip chip-manual"),
+            ui.span(f"{linked} of {len(cw)} residents linked to an account", class_="chip"),
+            class_="chip-row",
         )
-        return out.assign(_o=cw.tier.map(TIER_ORDER)).sort_values(["_o", "Resident"]).drop(columns="_o")
 
-    @render.data_frame
-    def match_table():
-        cw = crosswalk.get()
-        if cw is None:
-            return None
-        return render.DataGrid(_review_frame(cw), filters=True, height="420px", width="100%")
+    def _account_select(cw, mk, row):
+        cands = names.candidate_accounts(cw, mk.people, row.acp_id)
+        opts = [ui.tags.option("Choose an MKSAP account…", value="", selected=True, disabled=True)]
+        for c in cands.itertuples():
+            label = f"{c.mk_last}, {c.mk_first}" + (
+                f"  (now linked to {c.linked_to})" if isinstance(c.linked_to, str) else ""
+            )
+            opts.append(ui.tags.option(label, value=c.mk_key))
+        return ui.tags.select(
+            *opts,
+            class_="form-select form-select-sm match-select",
+            onchange=_row_js(row.acp_id, "set", "this.value"),
+            **{"aria-label": f"MKSAP account for {row.ite_name}"},
+        )
 
-    @render.data_frame
-    def unmatched_table():
-        cw, (mk, _) = crosswalk.get(), mksap()
-        if cw is None or mk is None:
-            return None
-        u = names.unmatched_mksap(cw, mk.people)
-        df = pd.DataFrame({"MKSAP account": u.mk_last + ", " + u.mk_first, "Questions answered": u.mk_answered})
-        return render.DataGrid(df.sort_values("MKSAP account"), height="220px", width="100%")
+    def _row(cw, mk, row, pgy, mode):
+        acct = f"{row.mksap_last}, {row.mksap_first}" if isinstance(row.mksap_key, str) else None
+        if row.confirmed_by_user and acct is None:
+            status = ui.span("No MKSAP account", class_="chip")
+        elif acct is None:
+            status = ui.span("No match found", class_="chip chip-unmatched")
+        else:
+            status = ui.span(acct, class_="match-acct")
+        badge = {
+            "Exact": "chip-exact",
+            "Probable": "chip-probable",
+            "Ambiguous": "chip-ambiguous",
+            "Unmatched": "chip-unmatched",
+            "Manual": "chip-manual",
+        }.get(row.tier, "")
+        controls = []
+        if mode == "review" and acct is not None:
+            controls.append(
+                ui.tags.button("Confirm", class_="btn btn-sm btn-success", onclick=_row_js(row.acp_id, "confirm"))
+            )
+        controls.append(_account_select(cw, mk, row))
+        if not (row.confirmed_by_user and acct is None):
+            controls.append(
+                ui.tags.button(
+                    "No MKSAP account", class_="btn btn-sm btn-outline-secondary", onclick=_row_js(row.acp_id, "none")
+                )
+            )
+        return ui.div(
+            ui.div(
+                ui.strong(row.ite_name),
+                ui.span(f" · PGY-{pgy}" if pgy else "", class_="hint"),
+                ui.span(" ✓" if row.confirmed_by_user else "", class_="ok"),
+                class_="match-who",
+            ),
+            ui.div(
+                status,
+                " ",
+                ui.span("Suggested" if mode == "review" and acct else row.tier, class_=f"chip {badge}")
+                if not row.confirmed_by_user
+                else None,
+                class_="match-status",
+            ),
+            ui.div(*controls, class_="match-controls"),
+            class_=f"match-row match-{mode}",
+        )
 
     @render.ui
-    def edit_panel():
-        cw, (mk, _) = crosswalk.get(), mksap()
-        if cw is None or mk is None:
+    def review_rows():
+        cw, (mk, _), r = crosswalk.get(), mksap(), rosters()
+        if cw is None or mk is None or r is None:
             return None
-        order = cw.assign(_o=cw.tier.map(TIER_ORDER)).sort_values(["_o", "ite_name"])
-        residents = {a: f"{n} ({t})" for a, n, t in zip(order.acp_id, order.ite_name, order.tier, strict=True)}
-        free = names.unmatched_mksap(cw, mk.people).sort_values(["mk_last", "mk_first"])
-        accounts = {NO_ACCOUNT: "— No MKSAP account —"}
-        accounts.update({k: f"{a}, {b}" for k, a, b in zip(free.mk_key, free.mk_last, free.mk_first, strict=True)})
-        n_prob = int(((cw.tier == "Probable") & ~cw.confirmed_by_user).sum())
-        return ui.div(
-            ui.h6("Fix a match"),
-            ui.input_selectize("edit_resident", "Resident", residents),
-            ui.input_selectize("edit_account", "MKSAP account (unlinked accounts)", accounts),
-            ui.div(
-                ui.input_action_button("apply", "Apply", class_="btn-primary btn-sm"),
-                ui.input_action_button(
-                    "confirm_probable",
-                    f"Accept all Probable ({n_prob})",
-                    class_="btn-outline-primary btn-sm",
-                    disabled=n_prob == 0,
-                ),
-                class_="button-row",
-            ),
+        cur = r.long[r.long.Exam_Year == r.current_year].set_index("ID").PGY
+        order = cw.assign(tier_rank=cw.tier.map(TIER_ORDER), pgy_now=cw.acp_id.map(cur)).sort_values(
+            ["tier_rank", "ite_name"]
         )
+        need = order[~order.confirmed_by_user & (order.tier != "Exact")]
+        auto = order[~order.confirmed_by_user & (order.tier == "Exact")]
+        done = order[order.confirmed_by_user]
+        n_prob = int((need.tier == "Probable").sum())
+        free = names.unmatched_mksap(cw, mk.people).sort_values(["mk_last", "mk_first"])
+        parts = []
+        if len(need):
+            parts += [
+                ui.div(
+                    ui.h6(f"Needs your review ({len(need)})", class_="m-0"),
+                    ui.input_action_button(
+                        "confirm_probable", f"Confirm all suggestions ({n_prob})", class_="btn-outline-success btn-sm"
+                    )
+                    if n_prob
+                    else None,
+                    class_="d-flex justify-content-between align-items-center mb-2",
+                ),
+                *[_row(cw, mk, x, x.pgy_now, "review") for x in need.itertuples()],
+            ]
+        else:
+            parts.append(message("Every resident is matched or reviewed.", "info"))
+        if len(done):
+            parts += [
+                ui.h6(f"Reviewed by you ({len(done)})", class_="mt-3"),
+                *[_row(cw, mk, x, x.pgy_now, "done") for x in done.itertuples()],
+            ]
+        if len(auto):
+            parts.append(
+                ui.tags.details(
+                    ui.tags.summary(f"Matched automatically ({len(auto)}) — same surname and first name"),
+                    *[_row(cw, mk, x, x.pgy_now, "auto") for x in auto.itertuples()],
+                    class_="explainer",
+                )
+            )
+        parts.append(
+            ui.tags.details(
+                ui.tags.summary(
+                    f"MKSAP accounts not linked to any resident ({len(free)}) — usually graduates or faculty"
+                ),
+                ui.tags.ul(
+                    *[
+                        ui.tags.li(f"{a}, {b} · {int(q):,} questions")
+                        for a, b, q in zip(free.mk_last, free.mk_first, free.mk_answered, strict=True)
+                    ],
+                    class_="unlinked-list",
+                ),
+                class_="explainer",
+            )
+        )
+        return ui.div(*parts)
 
     @reactive.effect
-    @reactive.event(input.apply)
-    def _apply():
-        cw, (mk, _) = crosswalk.get(), mksap()
-        if cw is None or mk is None:
+    @reactive.event(input.row_action)
+    def _row_action():
+        ev, cw, (mk, _) = input.row_action(), crosswalk.get(), mksap()
+        if not ev or cw is None or mk is None:
             return
-        acc = input.edit_account()
+        rid, action = str(ev.get("id")), ev.get("action")
+        if rid not in set(cw.acp_id):
+            return
         try:
-            crosswalk.set(names.set_match(cw, input.edit_resident(), None if acc == NO_ACCOUNT else acc, mk.people))
+            if action == "confirm":
+                key = cw.loc[cw.acp_id == rid, "mksap_key"].iloc[0]
+                crosswalk.set(names.set_match(cw, rid, key if isinstance(key, str) else None, mk.people))
+            elif action == "none":
+                crosswalk.set(names.set_match(cw, rid, None, mk.people))
+            elif action == "set" and ev.get("key"):
+                owner = cw.loc[(cw.mksap_key == ev["key"]) & (cw.acp_id != rid), "ite_name"]
+                crosswalk.set(names.reassign(cw, rid, ev["key"], mk.people))
+                if len(owner):
+                    ui.notification_show(
+                        f"Moved that MKSAP account from {owner.iloc[0]} — please review their row.",
+                        type="warning",
+                        duration=8,
+                    )
         except (KeyError, ValueError) as e:
             ui.notification_show(str(e).strip("'\""), type="error")
 

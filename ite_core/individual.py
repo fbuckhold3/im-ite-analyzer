@@ -1,7 +1,7 @@
 """Single-resident analysis from their own Examinee Performance Report (+ optional MKSAP).
 
-Strengths / areas to improve use the content-area *percentile* (rank vs same-PGY U.S.
-residents), not % correct, because area difficulty differs.
+Content areas are banded by the resident's national *percentile* (rank vs same-PGY U.S. residents), not
+% correct, because area difficulty differs: 50th and above / 25th-49th / below 25th.
 """
 
 from __future__ import annotations
@@ -27,7 +27,14 @@ ITE_TO_MKSAP = {
     "Rheumatology": ["RM"],
     "High Value Care": [],
 }
-STRENGTH_AT, FOCUS_BELOW = 60, 35
+STRENGTH_AT, FOCUS_BELOW = 50, 25
+# Internal keys stay Strength / Typical / Focus; these are the labels people see.
+BAND_LABEL = {
+    "Strength": "50th percentile and above",
+    "Typical": "25th–49th percentile",
+    "Focus": "Below 25th percentile",
+}
+BAND_ORDER = {"Focus": 0, "Typical": 1, "Strength": 2}
 
 
 def analyze_examinee(
@@ -65,8 +72,6 @@ def analyze_examinee(
         "Strength" if p >= strength_at else "Focus" if p < focus_below else "Typical" for p in tbl.percentile
     ]
     focus = tbl[tbl.standing == "Focus"]
-    if focus.empty:  # nothing below the cutoff: still name the two relatively weakest areas
-        focus = tbl.tail(2)
 
     if mksap_sections is not None and len(mksap_sections):
         sec = mksap_sections.set_index("Subspecialty")
@@ -131,3 +136,60 @@ def pick_mksap_account(people: pd.DataFrame, report_name: str | None) -> str | N
         return None
     cw = names.match_mksap(pd.DataFrame(dict(ID=["me"], Name=[report_name])), people)
     return cw.mksap_key.iloc[0]
+
+
+def next_year_targets(pgy, cutoffs=DEFAULT_CUTOFFS) -> list[tuple[int, float]]:
+    """[(later PGY, % correct needed there for the Low-risk cutoff), ...]; empty at PGY-3 and above."""
+    if not pgy:
+        return []
+    return [(p, round(pct_for_prob(cutoffs[1], p), 1)) for p in range(int(pgy) + 1, 4)]
+
+
+def _norm_objective(s: str) -> str:
+    import re
+
+    return re.sub(r"[^a-z0-9]+", " ", str(s).lower()).strip()
+
+
+def rank_questions(report: dict, program: dict, top_misses: int = 20, top_wins: int = 10) -> dict | None:
+    """Rank one resident's questions against national results from the program's Performance Report.
+
+    Missed questions are matched to report items by content area + objective text (2026: 7,071 of 7,073 matched).
+    Everything on the exam that was not missed counts as answered correctly.
+      misses: missed questions that the most residents at the same PGY level answered correctly nationally
+      wins:   the hardest questions (lowest national % correct at that PGY) the resident answered correctly
+    Returns None when the reports are from different exam years.
+    """
+    if program is None or (
+        report.get("exam_year") and program.get("exam_year") and report["exam_year"] != program["exam_year"]
+    ):
+        return None
+    items = program["items"].copy()
+    pgy = report.get("pgy") or 2
+    col = f"all{min(3, max(1, int(pgy)))}" if 1 <= int(pgy) <= 3 else "allA"
+    items["key"] = items.area + "|" + items.objective.map(_norm_objective)
+    missed = report["missed"]
+    mkeys = set(missed.area + "|" + missed.objective.map(_norm_objective))
+    items["missed"] = items.key.isin(mkeys)
+    items["national"] = items[col]
+    cols = ["area", "objective", "hvc", "national"]
+    misses = items[items.missed].sort_values(["national", "area"], ascending=[False, True]).head(top_misses)[cols]
+    wins = items[~items.missed].sort_values(["national", "area"]).head(top_wins)[cols]
+    return dict(
+        misses=misses.reset_index(drop=True),
+        wins=wins.reset_index(drop=True),
+        matched=int(items.missed.sum()),
+        missed_total=int(len(missed)),
+        pgy_column=col,
+        pgy_label="all PGYs" if col == "allA" else f"PGY-{col[-1]}",
+    )
+
+
+def target_gap_phrase(pct_now, target) -> str:
+    """'4.3 points more than this year's 56%' or 'you're already 1.9 points above it'."""
+    if pct_now is None or pct_now != pct_now:
+        return ""
+    gap = round(target - pct_now, 1)
+    if gap > 0:
+        return f"{gap:.1f} points more than this year's {pct_now:.0f}%"
+    return f"you're already {abs(gap):.1f} points above it" if gap < 0 else "the same as this year"

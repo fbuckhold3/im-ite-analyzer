@@ -109,3 +109,18 @@ def test_deidentified_tiers_cannot_be_recovered_by_subtraction(ds):
     assert "Intermediate risk</th>" not in html and "Below Low risk" in html
     assert "≥" in html  # Low risk shown as a range wherever Below Low risk is suppressed
     assert "improved" not in html or "omitted" in html
+
+
+def test_report_summary_tiles_and_takeaways(ds, program):
+    data, _ = ds
+    html = R.content_without_library(R.build_report(data, program, deidentified=False).decode())
+    for s in ("Residents tested", "PGY-2/3 in Low risk", "On the watch list", "Red-flag items", 'class="takeaway"'):
+        assert s in html, s
+    assert 'class="tierbar"' in html and "badge b-Low" in html
+
+
+def test_deidentified_tiles_respect_suppression(ds, program):
+    data, _ = ds
+    html = R.content_without_library(R.build_report(data, program, deidentified=True).decode())
+    assert "On the watch list" not in html and "tierbar" not in html.split("</style>")[1]
+    assert "PGY-2/3 below Low risk" in html

@@ -38,3 +38,4 @@ rsconnect/
 rsconnect-python/
 CLAUDE.local.md
 .data-guard-local.txt
+.preview/

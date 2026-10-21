@@ -338,3 +338,53 @@ def sample_program_report(seed: int = 11) -> dict:
     rep = parse_program_text([p1, p2] + item_pages)
     rep["file"] = "DEMO Program Performance Report"
     return rep
+
+
+def sample_resident_program_report() -> dict:
+    """An invented Program Performance Report matching the sample resident's exam, so the sample can show the
+    'biggest misses / notable wins' ranking. Every sample missed objective appears, plus invented items answered
+    correctly."""
+    from .pdf_reports import flag_items
+
+    rng = np.random.default_rng(5)
+    rows = []
+    for area in _SAMPLE_AREAS:
+        if area == "High Value Care":
+            continue
+        missed = _SAMPLE_MISSED.get(area, [])
+        extra = [
+            f"{_VERBS[k % len(_VERBS)]} {_THINGS[(k + len(area)) % len(_THINGS)]} ({area.split()[0].lower()} "
+            f"item {k + 1})."
+            for k in range(5)
+        ]
+        for obj in missed + extra:
+            hvc = obj.endswith("**")
+            nat = [int(x) for x in rng.integers(20, 92, 3)]
+            ours = [int(np.clip(n + rng.normal(0, 8), 0, 100)) for n in nat]
+            rows.append(
+                dict(
+                    area=area,
+                    objective=obj.replace("**", ""),
+                    page=3,
+                    hvc=hvc,
+                    all1=nat[0],
+                    our1=ours[0],
+                    all2=nat[1],
+                    our2=ours[1],
+                    all3=nat[2],
+                    our3=ours[2],
+                    allA=int(np.mean(nat)),
+                    ourA=int(np.mean(ours)),
+                )
+            )
+    items = pd.DataFrame(rows)
+    for k in ("1", "2", "3", "A"):
+        items[f"gap{k}"] = items[f"our{k}"] - items[f"all{k}"]
+    return dict(
+        program_id="100000",
+        program_name="DEMO INTERNAL MEDICINE PROGRAM",
+        exam_year=2026,
+        areas=pd.DataFrame(),
+        items=flag_items(items),
+        file="DEMO Program Performance Report (sample resident)",
+    )

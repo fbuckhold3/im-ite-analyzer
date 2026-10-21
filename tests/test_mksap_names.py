@@ -90,3 +90,23 @@ def test_attach_mksap(roster_files, people):
     w2 = history.attach_mksap(w, cw, people).set_index("ID")
     assert w2.loc["1003", "mk_bank"] == 12 and pd.isna(w2.loc["1005", "mk_answered"])
     assert len(w2) == len(w)
+
+
+def test_reassign_takes_account_from_other_resident(ite, people):
+    cw = names.set_match(names.match_mksap(ite, people), "1005", "Lee|Jordan", people)
+    cw = names.reassign(cw, "1001", "Lee|Jordan", people).set_index("acp_id")
+    assert cw.loc["1001", "mksap_key"] == "Lee|Jordan" and cw.loc["1001", "confirmed_by_user"]
+    assert pd.isna(cw.loc["1005", "mksap_key"]) and cw.loc["1005", "tier"] == "Unmatched"
+    assert not cw.loc["1005", "confirmed_by_user"]  # goes back to the review list
+
+
+def test_candidate_accounts_order(ite, people):
+    cw = names.match_mksap(ite, people)
+    linked = cw.dropna(subset=["mksap_key"])
+    rid = linked.acp_id.iloc[0]
+    c = names.candidate_accounts(cw, people, rid)
+    assert len(c) == len(people) and set(c.mk_key) == set(people.mk_key)
+    own = linked.mksap_key.iloc[0]
+    assert c.mk_key.iloc[0] == own and pd.isna(c.linked_to.iloc[0])  # its own account: surname match, not "taken"
+    taken = c.linked_to.notna().to_numpy()
+    assert not taken[: (~taken).sum()].any()  # accounts linked to someone else come last

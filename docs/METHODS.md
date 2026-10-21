@@ -54,7 +54,10 @@ curve reaches the Low-risk cutoff.
   names, **plus** agreement on first name (same initial or a known nickname). Several candidates are narrowed
   to an identical first name; otherwise the resident is left Ambiguous for the user to resolve. Matches are
   graded Exact / Probable / Ambiguous / Unmatched (Manual once a user links an account by hand), and every one
-  can be reviewed and overridden.
+  can be reviewed and overridden. In the app, residents needing review are listed first, each with a suggested
+  account (same surname first, then same initial); the reviewer confirms, picks another account, or marks
+  "No MKSAP account" (residents are not required to have one). Picking an account that is already linked moves it,
+  and the resident it came from returns to the review list.
 
 ## 4. Program analyses (`history.py`, `stats.py`)
 - **Graduating class** = exam year + 4 − PGY.
@@ -99,8 +102,19 @@ one resident moves a single-PGY percentage by several points, so treat flags as 
 
 ## 6. Resident self-analysis (`individual.py`)
 Content areas are ranked by the resident's percentile (not % correct, since area difficulty differs).
-Strength ≥ 60th percentile; Focus < 35th, or the two weakest areas if none fall below 35th. Missed objectives
-are grouped by area as printed in the ACP report. The ITE-area → MKSAP-section map is provisional.
+Areas fall into three bands: 50th percentile and above, 25th–49th, and below 25th (no fallback: if no area is
+below the 25th, that band is empty). Missed objectives are grouped by area as printed in the ACP report.
+
+**Next-year targets.** For PGY-1 and PGY-2, the % correct at which each later PGY curve reaches the Low-risk cutoff
+(90% by default) is shown on the curve; none for PGY-3.
+
+**Biggest misses and notable wins.** When the resident also uploads the Program Performance Report for the same
+exam year, each item in their report is matched to the program report by content area + objective text, and the
+national % correct at the resident's PGY level is attached. Misses are ranked by how many residents nationally got
+the item right (missing an item most people answer correctly is the largest gap; top 20); wins are items the
+resident answered correctly that few residents nationally did (top 10). Any item not listed as missed in the
+resident's report is counted as answered correctly. Reports from different exam years are not
+combined. The ITE-area → MKSAP-section map is provisional.
 
 ## Intended use
 ACP describes the IM-ITE as intended solely as an educational program. These analyses help residents and
