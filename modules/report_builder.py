@@ -24,6 +24,7 @@ from ite_core.nomogram import DEFAULT_CUTOFFS
 
 from . import plots
 from .common import DOI, ORCID, REPO
+from .items_tab import gap_legend, items_table, rank_legend
 
 CSS = """
 :root{--ink:#1f2328;--soft:#57606a;--line:#d8dee4;--page:#f4f6f8;--card:#fff;--primary:#0b5cad;--navy:#0d2a47;
@@ -73,6 +74,26 @@ color:var(--mid)} .b-Low{background:var(--low-bg);color:var(--low)}
 .seg-Low{background:#009e73}
 footer{margin-top:28px;color:var(--soft);font-size:.85rem}
 a{color:var(--primary)} .print-footer{display:none}
+.hint{color:var(--soft);font-size:.9rem;max-width:80ch}
+.items-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+.items-table{margin:0;font-size:.88rem} .items-table th{position:static} .it-gap{text-align:center}
+.it-area{white-space:nowrap;font-weight:600} .it-obj{min-width:14rem}
+.hvc-tag{font-size:.7rem;font-weight:700;color:var(--primary);border:1px solid var(--primary);border-radius:4px;
+padding:0 .25rem;margin-left:.3rem}
+.flag-badge{display:inline-block;border-radius:999px;padding:.1rem .55rem;font-size:.78rem;font-weight:700;
+text-transform:capitalize} .flag-red{background:var(--high-bg);color:var(--high)}
+.flag-yellow{background:var(--mid-bg);color:var(--mid)}
+.gap-chip{display:inline-block;min-width:2.6rem;text-align:center;border-radius:6px;padding:.1rem .4rem;font-weight:700;
+font-size:.82rem} .gap-sev{background:#b3261e;color:#fff} .gap-neg{background:#fbd9c7;color:#8a2a00}
+.gap-0{background:#eef1f4;color:#3d444d} .gap-pos{background:#d3e6f7;color:#0b4a8b}
+.gap-legend{font-size:.85rem;color:var(--soft);display:flex;flex-wrap:wrap;gap:.35rem;align-items:center}
+.db{display:grid;gap:.2rem;min-width:8rem} .db-track{position:relative;height:10px;background:#eef1f4;border-radius:5px}
+.db-span{position:absolute;top:3px;height:4px;border-radius:2px} .db-span.db-below{background:#e8a17f}
+.db-span.db-above{background:#9cc3e6} .db-nat{position:absolute;top:-2px;width:2px;height:14px;background:#3d444d;
+transform:translateX(-1px)} .db-ours{position:absolute;top:0;width:10px;height:10px;border-radius:50%;
+transform:translateX(-5px);border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.db-ours.db-below{background:#c2410c} .db-ours.db-above{background:#0b5cad}
+.db-label{font-size:.75rem;color:var(--soft)}
 @media (max-width:600px){.wrap{padding:0 16px 24px}.hero h1{font-size:1.6rem}.card{padding:18px 16px}
 .kpi-value{font-size:1.7rem}}
 @page{size:letter;margin:0.6in 0.6in 0.7in}
@@ -539,16 +560,12 @@ def _mksap(ds, deid) -> Tag | None:
     return _card("mksap", "MKSAP", take, *body)
 
 
-def _gap(v) -> Tag | str:
-    return tags.span(f"{v:+d}", class_="gap-bad") if v <= -10 else f"{v:+d}"
-
-
 def _items(program) -> Tag | None:
     if program is None:
         return None
     it = program["items"]
     s = pdf_reports.items_summary(it)
-    flagged = it[it.flag.notna()].assign(_o=lambda d: d.flag.map({"red": 0, "yellow": 1})).sort_values(["_o", "gapA"])
+    flagged = it[it.flag.notna()]
     top = s["by_area"].iloc[0] if len(s["by_area"]) else None
     take = f"{s['red']} red and {s['yellow']} yellow items out of {s['n']}" + (
         f"; the most flagged content area is {top.area}." if top is not None and top.red + top.yellow else "."
@@ -557,28 +574,17 @@ def _items(program) -> Tag | None:
         "items",
         "Item-level gaps (ACP Program Performance Report)",
         take,
+        tags.h3("How the program ranks, by content area"),
+        rank_legend(),
+        _fig(plots.area_ranks_heatmap(pdf_reports.area_ranks(program["areas"]))),
+        tags.h3(f"Flagged questions ({len(flagged)})"),
         tags.p(
             "Red = All-PGY gap ≤ −10 points; yellow = any single-PGY gap ≤ −20. One resident ≈ 4 points at a single "
             "PGY level in a group of ~25: prompts for review, not findings.",
             class_="note",
         ),
-        _fig(plots.area_ranks_figure(pdf_reports.area_ranks(program["areas"]))),
-        _table(
-            ["Flag", "Area", "Objective", "PGY-1 gap", "PGY-2 gap", "PGY-3 gap", "All gap"],
-            [
-                [
-                    _badge(r.flag, r.flag),
-                    r.area,
-                    r.objective + (" (HVC)" if r.hvc else ""),
-                    _gap(r.gap1),
-                    _gap(r.gap2),
-                    _gap(r.gap3),
-                    _gap(r.gapA),
-                ]
-                for r in flagged.itertuples()
-            ],
-            num=(3, 4, 5, 6),
-        ),
+        gap_legend(),
+        items_table(flagged) if len(flagged) else tags.p("No flagged items.", class_="note"),
     )
 
 

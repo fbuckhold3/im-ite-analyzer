@@ -2,7 +2,7 @@
 
 MKSAP Digital exports are available to **program administrators**. Individual residents cannot export
 their own question-level data, so MKSAP analysis in im-ite-analyzer is program-level only
-(Program data → Upload & Align → MKSAP).
+(Program analysis → Upload & Align).
 
 ## Which export?
 
@@ -22,7 +22,8 @@ comparable within one export type. Totals per person and every ITE analysis agre
 3. At the bottom of the page there are three buttons: **Export Overview**, **Export Details** and Print Page.
    - **Export Overview** → the members overview (recommended).
    - **Export Details** → the full detail (adds section coverage).
-4. Upload the downloaded .csv unchanged on **Program data → Upload & Align**, in the MKSAP box.
+4. Drop the downloaded .csv, unchanged, on **Program analysis → Upload & Align** — the app recognizes it as
+   the MKSAP export.
 
 ## Tips
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pandas as pd
 import plotly.graph_objects as go
 
 from ite_core import nomogram
@@ -527,6 +528,57 @@ def area_ranks_figure(ranks):
         xaxis=dict(title="Program percentile rank among all programs (50 = middle)", range=[0, 100]),
         yaxis=dict(automargin=True),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    )
+    return widget_safe(fig)
+
+
+# Diverging scale for ranks among programs: vermillion (bottom) -> white (middle, 50) -> blue (top). Okabe-Ito ends.
+RANK_SCALE = [[0.0, "#c2410c"], [0.25, "#f4a261"], [0.5, "#f7f7f7"], [0.75, "#7fb3d9"], [1.0, "#0b5cad"]]
+
+
+def area_ranks_heatmap(ranks, total: bool = True):
+    """Content areas x PGY groups, each cell the program's percentile rank among all programs (50 = middle).
+
+    Rows sorted by the All-PGY rank, lowest at the top, so the areas to look at first lead. Numbers are printed in
+    every cell, so colour is never the only cue.
+    """
+    d = ranks[ranks.area != "Total Test"].sort_values("rankA", ascending=True, na_position="first")
+    if total and (ranks.area == "Total Test").any():
+        d = pd.concat([d, ranks[ranks.area == "Total Test"].assign(area="Total test")])  # drawn at the bottom
+    cols = [("1", "PGY-1"), ("2", "PGY-2"), ("3", "PGY-3"), ("A", "All PGYs")]
+    z = d[[f"rank{k}" for k, _ in cols]].to_numpy(dtype=float)
+    our = d[[f"our{k}" for k, _ in cols]].to_numpy()
+    nat = d[[f"all{k}" for k, _ in cols]].to_numpy()
+    text = [["" if v != v else f"{v:.0f}" for v in row] for row in z]
+    custom = [[[o, a] for o, a in zip(orow, arow, strict=True)] for orow, arow in zip(our, nat, strict=True)]
+    fig = go.Figure(
+        go.Heatmap(
+            z=z,
+            x=[label for _, label in cols],
+            y=d.area.tolist(),
+            text=text,
+            texttemplate="%{text}",
+            textfont=dict(size=13),
+            customdata=custom,
+            colorscale=RANK_SCALE,
+            zmin=0,
+            zmax=100,
+            xgap=3,
+            ygap=3,
+            showscale=False,  # the legend text explains the colours and every cell shows its number
+            hovertemplate="%{y} · %{x}<br>Rank among programs: %{z:.0f}<br>"
+            "Program %{customdata[0]}% vs all programs %{customdata[1]}% correct<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        height=90 + 34 * len(d),
+        margin=dict(l=10, r=10, t=40, b=10),
+        template="plotly_white",
+        modebar=MODEBAR,
+        font=FONT,
+        xaxis=dict(side="top", showgrid=False, tickfont=dict(size=13)),
+        yaxis=dict(automargin=True, showgrid=False, autorange="reversed"),
+        plot_bgcolor="#fff",
     )
     return widget_safe(fig)
 

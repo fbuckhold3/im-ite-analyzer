@@ -71,8 +71,8 @@ RESIDENT_STEPS = [
 PD_STEPS = [
     (
         "Gather your files",
-        "Download the ACP roster for each exam year you have — more years means trends and class tracking. "
-        "The other two files are optional and add their own analyses.",
+        "The ACP roster for each exam year you have — more years means trends and class tracking. The other two "
+        "files are optional and each adds its own analysis.",
         [
             ("ACP roster · .xlsx/.csv, one per year", False),
             ("Program Performance Report · PDF", True),
@@ -80,8 +80,9 @@ PD_STEPS = [
         ],
     ),
     (
-        "Upload on Program analysis → Upload & Align",
-        "Check the summary of exam years and residents per PGY level that the app found in your files.",
+        "Drop them all on Upload & Align",
+        "One drop zone takes every file; the app works out what each one is, ticks it off a checklist, and suggests "
+        "what to add next.",
         [],
     ),
     (
@@ -92,8 +93,9 @@ PD_STEPS = [
     ),
     (
         "Explore, then share",
-        "Start with Board pass for the watch list, then trends, classes and item gaps. The Reports tab builds a "
-        "confidential PD report, a de-identified summary for committees, and one Excel workbook with all data.",
+        "Pick a section box: start with Board pass for the watch list, then trends, classes and item gaps. "
+        "Reports builds a confidential PD report, a de-identified summary for committees, and one Excel workbook "
+        "with all data.",
         [],
     ),
 ]
@@ -280,6 +282,6 @@ def home_server(input, session):
             @reactive.effect
             @reactive.event(input[button])
             def _go():
-                ui.update_navs("nav", selected=target)
+                ui.update_navset("nav", selected=target)
 
         make(button, target)

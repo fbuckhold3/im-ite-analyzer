@@ -15,6 +15,7 @@ from modules.common import REPO, citation, footer, how_to_read
 from modules.home import home_server, home_ui
 from modules.items_tab import items_server, items_ui
 from modules.mksap_tab import mksap_server, mksap_ui
+from modules.program_nav import program_nav_server, program_nav_ui
 from modules.program_tabs import classes_server, classes_ui, trends_server, trends_ui, yoy_server, yoy_ui
 from modules.reports_tab import reports_server, reports_ui
 from modules.resident import resident_server, resident_ui
@@ -71,12 +72,13 @@ app_ui = ui.page_navbar(
     ui.nav_panel("Resident report", resident_ui("me"), value="me"),
     ui.nav_panel(
         "Program analysis",
-        ui.navset_underline(
+        program_nav_ui(),
+        ui.navset_hidden(
             ui.nav_panel("Upload & Align", upload_ui("upload"), value="upload"),
+            ui.nav_panel("Board pass", board_ui("board"), value="board"),
             ui.nav_panel("Trends by level", trends_ui("trends"), value="trends"),
             ui.nav_panel("Classes", classes_ui("classes"), value="classes"),
             ui.nav_panel("Year over year", yoy_ui("yoy"), value="yoy"),
-            ui.nav_panel("Board pass", board_ui("board"), value="board"),
             ui.nav_panel("MKSAP", mksap_ui("mksap"), value="mksap"),
             ui.nav_panel("Item gaps", items_ui("items"), value="items"),
             ui.nav_panel("Reports", reports_ui("reports"), value="reports"),
@@ -100,6 +102,7 @@ def server(input, output, session):
     calculator_server("calc")
     resident_server("me")
     dataset, program = upload_server("upload")  # session dataset + parsed Program Performance Report
+    program_nav_server(input, session, dataset, program)
     trends_server("trends", dataset=dataset)
     classes_server("classes", dataset=dataset)
     yoy_server("yoy", dataset=dataset)

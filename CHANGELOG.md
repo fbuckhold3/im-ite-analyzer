@@ -37,6 +37,18 @@ versions follow [Semantic Versioning](https://semver.org/).
   points). `modules/report_builder.py`.
 
 ### Changed
+- **Program analysis upload**: one drop zone for every file. Each file is recognized from its contents
+  (`ite_core/detect.py`: ACP roster, MKSAP overview/detail export, Program Performance Report, saved crosswalk) and
+  ticked off a "What to upload" checklist that says what each file is, where to get it, what it unlocks, and
+  suggests adding the optional ones. A resident's Examinee report dropped here is pointed to Resident report;
+  anything unrecognized is listed with the reason. Files added later join the ones already loaded.
+- **Program analysis navigation**: section boxes (name + one line, muted with "Needs …" until their file is
+  added) replace the row of sub-tabs; on phones they become one scrolling row.
+- **Item gaps**: content areas shown as a heatmap (area × PGY group, program rank among programs, lowest first,
+  numbers in every cell) instead of the dot plot; summary tiles; questions in a formatted table with flag badges,
+  a program-vs-national bar and colour-coded gap chips, filterable by content area (stacked cards on phones).
+  The PD report uses the same heatmap and table.
+- Higher contrast throughout: tinted page background behind white cards, firmer card and table headers.
 - **MKSAP matching** on Upload & Align redesigned: residents needing review come first, one row each with
   Confirm / account picker / "No MKSAP account"; choosing an account already linked to someone else moves it and
   sends that resident back for review; automatic matches and unlinked accounts are collapsed below.

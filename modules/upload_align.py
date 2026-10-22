@@ -13,7 +13,7 @@ from pathlib import Path
 import pandas as pd
 from shiny import module, reactive, render, ui
 
-from ite_core import demo, names
+from ite_core import demo, detect, names
 from ite_core import mksap as mksap_mod
 from ite_core import session as S
 from ite_core.limits import MAX_FILE_MB, UploadError
@@ -34,43 +34,34 @@ def _take(fileinfo: dict) -> S.Upload:
             os.remove(path)
 
 
+ACCEPT = [".xlsx", ".xls", ".csv", ".pdf"]
+
+
 @module.ui
 def upload_ui():
     return ui.div(
         ui.layout_columns(
             ui.card(
-                ui.card_header("1 · Upload"),
+                ui.card_header("1 · Add your files"),
                 privacy_note(),
                 ui.input_file(
-                    "rosters",
-                    "ACP Downloadable Roster(s) — one per exam year",
+                    "dropped",
+                    "Drop every file you have here — the app works out what each one is.",
                     multiple=True,
-                    accept=[".xlsx", ".xls", ".csv"],
+                    accept=ACCEPT,
                     button_label="Choose files…",
+                    width="100%",
                 ),
-                ui.input_file(
-                    "mksap",
-                    "MKSAP Digital program export (optional) — members overview or full detail, .csv",
-                    accept=[".csv"],
-                    button_label="Choose file…",
+                ui.p(
+                    f"Spreadsheets (.xlsx, .xls, .csv) and PDFs, up to {MAX_FILE_MB} MB each. You can add more files "
+                    "later; they are added to what's already here.",
+                    class_="hint",
                 ),
-                mksap_howto(),
-                ui.input_file(
-                    "program_pdf",
-                    "ACP Program Performance Report (PDF, optional) — for item-level gaps",
-                    accept=[".pdf"],
-                    button_label="Choose PDF…",
-                ),
-                ui.input_file(
-                    "crosswalk",
-                    "Saved crosswalk from an earlier session (optional)",
-                    accept=[".csv"],
-                    button_label="Choose file…",
-                ),
-                ui.p(f"Up to {MAX_FILE_MB} MB per file.", class_="hint"),
+                ui.output_ui("checklist"),
+                ui.output_ui("intake_notes"),
                 ui.div(
                     ui.input_action_button("demo", "Load demo data", class_="btn-outline-primary btn-sm"),
-                    ui.input_action_button("clear", "Clear", class_="btn-outline-secondary btn-sm"),
+                    ui.input_action_button("clear", "Start over", class_="btn-outline-secondary btn-sm"),
                     class_="button-row",
                 ),
                 ui.p("Demo data is invented — no real residents.", class_="hint"),
@@ -93,44 +84,16 @@ def upload_server(input, output, session):
     roster_ups: reactive.Value[list[S.Upload]] = reactive.value([])
     mksap_up: reactive.Value[S.Upload | None] = reactive.value(None)
     prior_cw: reactive.Value[pd.DataFrame | None] = reactive.value(None)
+    cw_name: reactive.Value[str | None] = reactive.value(None)
     crosswalk: reactive.Value[pd.DataFrame | None] = reactive.value(None)
     is_demo = reactive.value(False)
     program: reactive.Value[dict | None] = reactive.value(None)
     program_err: reactive.Value[str | None] = reactive.value(None)
+    # files that were not loaded: (file name, why)
+    skipped: reactive.Value[list[tuple[str, str]]] = reactive.value([])
 
     # ------------------------------------------------------------------ intake
-    @reactive.effect
-    @reactive.event(input.rosters)
-    def _rosters():
-        roster_ups.set([_take(f) for f in input.rosters() or []])
-        is_demo.set(False)
-
-    @reactive.effect
-    @reactive.event(input.mksap)
-    def _mksap():
-        files = input.mksap() or []
-        mksap_up.set(_take(files[0]) if files else None)
-        is_demo.set(False)
-
-    @reactive.effect
-    @reactive.event(input.crosswalk)
-    def _crosswalk():
-        files = input.crosswalk() or []
-        if not files:
-            return
-        try:
-            prior_cw.set(S.read_crosswalk(_take(files[0])))
-            ui.notification_show("Crosswalk loaded — your earlier decisions were applied.", type="message")
-        except UploadError as e:
-            ui.notification_show(str(e), type="error", duration=10)
-
-    @reactive.effect
-    @reactive.event(input.program_pdf)
-    def _program_pdf():
-        files = input.program_pdf() or []
-        if not files:
-            return
-        up = _take(files[0])
+    def _load_program(up: S.Upload):
         try:
             program.set(S.load_program_report(up))
             program_err.set(None)
@@ -141,27 +104,62 @@ def upload_server(input, output, session):
             program.set(None)
             program_err.set(f"“{up.name}” could not be processed.")
 
+    def _load_crosswalk(up: S.Upload) -> str | None:
+        try:
+            prior_cw.set(S.read_crosswalk(up))
+            cw_name.set(up.name)
+            ui.notification_show("Crosswalk loaded — your earlier MKSAP decisions were applied.", type="message")
+            return None
+        except UploadError as e:
+            return str(e)
+
+    @reactive.effect
+    @reactive.event(input.dropped)
+    def _intake():
+        """Route each dropped file by what it is. New files add to (or replace same-named) files already here."""
+        ups = [_take(f) for f in input.dropped() or []]
+        if is_demo.get():
+            _reset()
+        got = detect.sort_uploads(ups)
+        new_names = {u.name for u in got[detect.ROSTER]}
+        rosters_now = [r for r in roster_ups.get() if r.name not in new_names] + got[detect.ROSTER]
+        if got[detect.MKSAP] is not None:
+            mksap_up.set(got[detect.MKSAP])
+        if got[detect.PROGRAM] is not None:
+            _load_program(got[detect.PROGRAM])
+        notes = list(got["skipped"])
+        if got[detect.CROSSWALK] is not None:
+            err = _load_crosswalk(got[detect.CROSSWALK])
+            if err:
+                notes.append((got[detect.CROSSWALK].name, err))
+        roster_ups.set(rosters_now)
+        skipped.set(notes)
+
+    def _reset():
+        roster_ups.set([])
+        mksap_up.set(None)
+        prior_cw.set(None)
+        cw_name.set(None)
+        crosswalk.set(None)
+        program.set(None)
+        program_err.set(None)
+        skipped.set([])
+        is_demo.set(False)
+
     @reactive.effect
     @reactive.event(input.demo)
     def _demo():
+        _reset()
         d = demo.make_demo()
         roster_ups.set([S.Upload(n, b) for n, b in d["rosters"]])
         mksap_up.set(S.Upload(*d["mksap"]))
         program.set(demo.sample_program_report())
-        program_err.set(None)
-        prior_cw.set(None)
         is_demo.set(True)
 
     @reactive.effect
     @reactive.event(input.clear)
     def _clear():
-        roster_ups.set([])
-        mksap_up.set(None)
-        prior_cw.set(None)
-        crosswalk.set(None)
-        program.set(None)
-        program_err.set(None)
-        is_demo.set(False)
+        _reset()
 
     # ------------------------------------------------------------- processing
     @reactive.calc
@@ -214,6 +212,122 @@ def upload_server(input, output, session):
         mk, _ = mksap()
         cw = crosswalk.get()
         return S.Dataset(rosters=r, mksap=mk, crosswalk=cw, wide=S.build_wide(r, mk, cw))
+
+    # -------------------------------------------------------------- checklist
+    def _item(state, title, req, what, where, status, unlocks=None, extra=None):
+        """One checklist entry. state: done / todo / suggest / error."""
+        icon = {"done": "✓", "todo": "○", "suggest": "+", "error": "!"}[state]
+        done = state == "done"
+        return ui.tags.li(
+            ui.span(icon, class_=f"check-icon check-{state}", aria_hidden="true"),
+            ui.div(
+                ui.div(
+                    ui.strong(title),
+                    ui.span(req, class_="file-opt" if req == "optional" else "file-req"),
+                    class_="check-title",
+                ),
+                None if done else ui.p(what, class_="check-what"),
+                None if done else ui.p(ui.span("Where: ", class_="check-k"), where, class_="check-where"),
+                ui.p(status, class_=f"check-status status-{state}") if status else None,
+                ui.p(ui.span("Unlocks: ", class_="check-k"), unlocks, class_="check-unlocks")
+                if unlocks and not done
+                else None,
+                None if done else extra,
+                class_="check-body",
+            ),
+            class_=f"check-item check-item-{state}",
+        )
+
+    @render.ui
+    def checklist():
+        r = rosters()
+        mk, mk_err = mksap()
+        rep, rep_err = program.get(), program_err.get()
+        have_rosters = r is not None and r.current_year is not None
+        if have_rosters:
+            years = sorted(int(y) for y in r.long.Exam_Year.unique())
+            r_state, r_status = "done", f"{len(years)} year(s) loaded: {', '.join(map(str, years))}."
+        elif r is not None:
+            r_state, r_status = "error", "No roster could be read — see What we found."
+        else:
+            r_state, r_status = "todo", "Needed for everything on the program pages."
+
+        def optional(obj, err, done_text, missing_text):
+            if err:
+                return "error", err
+            if obj is not None:
+                return "done", done_text
+            return ("suggest", missing_text) if have_rosters else ("todo", None)
+
+        mk_state, mk_status = optional(
+            mk,
+            mk_err,
+            f"{len(mk.people):,} accounts ({mksap_mod.KIND_LABEL[mk.kind]})." if mk else "",
+            "Add it to see MKSAP progress and how MKSAP volume relates to ITE scores.",
+        )
+        rep_state, rep_status = optional(
+            rep,
+            rep_err,
+            f"{rep.get('exam_year') or ''} report, {len(rep['items'])} items.".strip() if rep else "",
+            "Add it to see which content areas and questions fell furthest below national.",
+        )
+        cw_state = "done" if prior_cw.get() is not None else "todo"
+        return ui.tags.ol(
+            _item(
+                r_state,
+                "ACP roster",
+                "required",
+                "The ACP Downloadable Roster with Score Results — one spreadsheet per exam year, each resident's "
+                "scores and percentiles. Add every year you have for trends and class tracking.",
+                "your program's IM-ITE score results from ACP (.xlsx or .csv).",
+                r_status,
+                "Trends by level, Classes, Year over year, Board pass, Reports.",
+            ),
+            _item(
+                rep_state,
+                "Program Performance Report",
+                "optional",
+                "ACP's program-level PDF: content-area ranks among programs and every question's program vs "
+                "national % correct. No resident names.",
+                "the same ACP score results, as a PDF.",
+                rep_status,
+                "Item gaps.",
+            ),
+            _item(
+                mk_state,
+                "MKSAP export",
+                "optional",
+                "Your program's MKSAP Digital activity — the members overview or the full detail (.csv). Residents "
+                "can't export their own.",
+                "MKSAP Tracker → Members → Export Overview (or Export Details).",
+                mk_status,
+                "MKSAP.",
+                extra=mksap_howto(),
+            ),
+            _item(
+                cw_state,
+                "Saved MKSAP crosswalk",
+                "optional",
+                "Only if you've used the app before: the matching file you downloaded after reviewing MKSAP "
+                "matches. It reapplies your decisions.",
+                "the .csv you saved from this page last time.",
+                f"Loaded “{cw_name.get()}”." if cw_state == "done" else None,
+            ),
+            class_="checklist",
+            aria_label="What to upload",
+        )
+
+    @render.ui
+    def intake_notes():
+        notes = skipped.get()
+        if not notes:
+            return None
+        return ui.div(
+            ui.strong(f"{len(notes)} file(s) not added"),
+            ui.tags.ul(*[ui.tags.li(ui.strong(f"“{n}”"), " ", why) for n, why in notes]),
+            class_="msg msg-warning",
+            role="status",
+        )
 
     # ------------------------------------------------------------------ files
     @render.ui
