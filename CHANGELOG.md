@@ -6,7 +6,9 @@ versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 ### Added
 - **Home** page with three entry cards (Quick estimate, Resident report, Program analysis), each saying what to
-  bring and what you get.
+  bring and what you get, plus a "How to use it" guide: numbered steps for residents and for program directors,
+  a labeled example of the resident results, a "what each file unlocks" map, and a files → session → results
+  privacy strip.
 - **Resident report**: board-pass curve directly under the estimate with next-year targets (the % correct needed
   next year for ≥90% pass probability; not shown for PGY-3); content areas in three colored percentile bands
   (≥50th, 25th–49th, <25th); optional Program Performance Report upload ranks the resident's 20 biggest misses

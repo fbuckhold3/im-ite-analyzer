@@ -89,7 +89,7 @@
       "checksum": "d682d64c5fec9c80cc16699eaa3efab7"
     },
     "modules/home.py": {
-      "checksum": "940795180c74f1178bb4ed440cf601ef"
+      "checksum": "02fc4d50a4ba4610533be2783e187939"
     },
     "modules/items_tab.py": {
       "checksum": "4a9a23bf0a0b71f7e3fb20b52f50f9cf"
@@ -122,7 +122,7 @@
       "checksum": "4b28c6781e6143465b622898cb51d141"
     },
     "www/app.css": {
-      "checksum": "9a4a4cd15c8fac2493a5173d75a468e5"
+      "checksum": "4f1a9b0bd7b1b2524dbbfc3e6ab14513"
     }
   }
 }
