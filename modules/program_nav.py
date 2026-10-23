@@ -17,12 +17,14 @@ SECTIONS = [
     ("yoy", "Year over year", "The same residents, last year to this year", "rosters"),
     ("mksap", "MKSAP", "Progress by class and MKSAP vs ITE", "mksap"),
     ("items", "Item gaps", "Content areas and questions below national", "program"),
+    ("outcomes", "Board outcomes", "ABIM results vs what the ITE predicted", "abim"),
     ("reports", "Reports", "PD report, de-identified summary, all data", "any"),
 ]
 NEEDS = {
     "rosters": "Needs ACP rosters",
     "mksap": "Needs the MKSAP export",
     "program": "Needs the Program Performance Report",
+    "abim": "Needs ABIM results and rosters",
     "any": "Needs at least one file",
 }
 
@@ -31,12 +33,18 @@ def program_nav_ui():
     return ui.output_ui("program_tiles")
 
 
-def program_nav_server(input, session, dataset, program):
+def program_nav_server(input, session, dataset, program, abim_data):
     def have() -> dict:
         ds, rep = dataset(), program()
         rosters = ds is not None and ds.wide is not None
         mksap = rosters and ds.mksap is not None
-        return {"rosters": rosters, "mksap": mksap, "program": rep is not None, "any": rosters or rep is not None}
+        return {
+            "rosters": rosters,
+            "mksap": mksap,
+            "program": rep is not None,
+            "abim": rosters and abim_data() is not None,
+            "any": rosters or rep is not None,
+        }
 
     @render.ui
     def program_tiles():

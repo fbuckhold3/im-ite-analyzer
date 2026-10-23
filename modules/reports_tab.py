@@ -58,14 +58,17 @@ def reports_ui():
 
 
 @module.server
-def reports_server(input, output, session, dataset, program):
+def reports_server(input, output, session, dataset, program, outcomes=None):
     @reactive.calc
     def cutoffs():
         return (0.50, float(input.low_cut()))
 
+    def _outcomes():
+        return outcomes() if outcomes is not None else None
+
     @reactive.calc
     def sections():
-        return report_builder.included_sections(dataset(), program())
+        return report_builder.included_sections(dataset(), program(), _outcomes())
 
     @render.ui
     def contents():
@@ -85,7 +88,9 @@ def reports_server(input, output, session, dataset, program):
     @render.download_button(filename=lambda: _name("PD_report_CONFIDENTIAL"), media_type="text/html")
     def identified():
         if sections():
-            yield report_builder.build_report(dataset(), program(), deidentified=False, cutoffs=cutoffs())
+            yield report_builder.build_report(
+                dataset(), program(), deidentified=False, cutoffs=cutoffs(), outcomes=_outcomes()
+            )
 
     @render.ui
     def sheets():

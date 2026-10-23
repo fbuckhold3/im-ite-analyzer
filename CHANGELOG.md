@@ -5,6 +5,14 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 ### Added
+- **Board outcomes** (new section): drop ABIM's Examination Results report and/or Program Data Report (PDF) on
+  Upload & Align. Takers are linked to graduates' ITE records by name (manual linking for the rest) and the section
+  shows predicted vs observed pass rate per exam year, outcomes by predicted risk tier, each graduate's estimate
+  against their result, ABIM score vs last ITE (Program Data Report), and an anonymous table of estimate, MKSAP and
+  result. Included in the confidential PD report only. `ite_core/abim.py`, `modules/outcomes_tab.py`.
+- **Projected ABIM pass rate by class** on Board pass and in the PD report: the average of residents' estimated
+  pass probabilities, with a likely range (middle 80%, by chance alone) for the number who pass. The de-identified
+  summary shows the rate only and suppresses classes under 5.
 - **Home** page with three entry cards (Quick estimate, Resident report, Program analysis), each saying what to
   bring and what you get, plus a "How to use it" guide: numbered steps for residents and for program directors,
   a labeled example of the resident results, a "what each file unlocks" map, and a files → session → results

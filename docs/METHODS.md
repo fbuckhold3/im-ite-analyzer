@@ -41,6 +41,28 @@ or whose tier worsened since the prior exam year. PGY-1s are excluded because th
 everyone in Low risk. "Points from Low risk" = current % correct minus the % correct at which the resident's PGY
 curve reaches the Low-risk cutoff.
 
+### Projected class pass rate (`board.py`)
+For each current class (PGY level), the projected ABIM pass rate is the mean of the residents' estimated pass
+probabilities — the expected share passing if the estimates hold. The "likely" range is the central 80% of the exact
+distribution of the number who pass (Poisson-binomial, from each resident's probability), assuming results are
+independent and the estimates exact. It therefore reflects chance only, not uncertainty in the approximated
+nomogram, and PGY-1 projections (intern ITE, shallow curve) are the least informative. Residents without a
+current-year score are excluded and counted. De-identified summary: rate only (the range would reveal how many are
+below Low risk), and classes under 5 suppressed.
+
+### Board outcomes: ABIM results vs ITE prediction (`abim.py`)
+ABIM's program PDFs are read as text: the Examination Results report (name + Pass/Fail per first-time taker) and the
+Program Data Report (adds the standardized score or "Withheld by Candidate", the program and all-programs pass
+rates, and the passing score; its content-area chart is an image and is not read). If both cover the same exam year,
+the Program Data Report is used. ABIM reports carry no ACP ID, so takers are linked to residents who finished
+training in the exam year or the year before by name, with the MKSAP rules (exact surname or shared surname token
+plus first-name agreement); unmatched takers can be linked by hand. "Predicted" is the estimated pass probability
+from each graduate's last ITE before graduating (PGY-3 when available) and is compared with the observed pass rate
+among linked takers, per exam year and by predicted risk tier. MKSAP volume / accuracy come from the current export
+(auto-matched exact/probable only) and may include activity after the exam. Cohorts are small, so this is
+descriptive: a check on the estimate, not a measure of the program. Shown in the app and the confidential PD report
+only; the anonymous table has no names; never in the de-identified summary.
+
 ## 2. Percent correct vs percentile
 - **% correct**: share of exam items answered correctly. It depends on that year's exam difficulty and rises
   with training. It drives the ABIM estimate.

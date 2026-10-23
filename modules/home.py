@@ -77,6 +77,7 @@ PD_STEPS = [
             ("ACP roster · .xlsx/.csv, one per year", False),
             ("Program Performance Report · PDF", True),
             ("MKSAP Members export · .csv", True),
+            ("ABIM exam results · PDF", True),
         ],
     ),
     (
@@ -105,6 +106,7 @@ UNLOCKS = [
     ("ACP rosters", False, ["Trends by level", "Classes", "Year over year", "Board pass", "Reports"]),
     ("MKSAP export", True, ["MKSAP"]),
     ("Program Performance Report", True, ["Item gaps"]),
+    ("ABIM exam results", True, ["Board outcomes"]),
 ]
 
 

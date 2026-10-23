@@ -338,3 +338,24 @@ body { background: var(--page); }
 /* The heatmap needs room for area names + four columns: scroll sideways on phones instead of squeezing */
 .heatmap-wrap { overflow-x: auto; }
 .heatmap-wrap > * { min-width: 560px; }
+.stat-range { margin-top: .35rem; font-size: .88rem; font-weight: 600; color: #3d444d; }
+.stat-caveat { margin-top: .2rem; font-size: .78rem; color: var(--mid); }
+@media (max-width: 600px) { .stat-range { font-size: .8rem; } }
+
+/* ---------- Board outcomes ---------- */
+.oc-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .75rem; }
+.oc-card { border: 1px solid var(--card-line); border-radius: 10px; padding: .9rem 1rem; background: #fff; }
+.oc-year { font-weight: 700; margin-bottom: .45rem; }
+.oc-pair { display: flex; gap: 1.75rem; flex-wrap: wrap; }
+.oc-num { font-size: 2rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.oc-obs { color: var(--bs-primary); }
+.oc-lab { font-size: .82rem; color: var(--ink-soft); }
+.oc-note { font-size: .85rem; color: var(--ink-soft); margin: .45rem 0 0; }
+.oc-tiers { max-width: 44rem; }
+.oc-tiers td.num, .oc-anon td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.oc-res { display: inline-block; border-radius: 999px; padding: .05rem .55rem; font-size: .8rem; font-weight: 700; }
+.oc-pass { background: #d3e6f7; color: #0b4a8b; } .oc-fail { background: #fbd9c7; color: #8a2a00; }
+.oc-link-row { display: grid; grid-template-columns: minmax(12rem, 1fr) minmax(14rem, 1.2fr); gap: .6rem;
+  align-items: center; padding: .5rem .6rem; border: 1px solid var(--rule); border-radius: 8px; margin-bottom: .4rem; }
+@media (max-width: 600px) { .oc-link-row { grid-template-columns: 1fr; } .oc-num { font-size: 1.6rem; } }
+@media (min-width: 1200px) { .ptiles { grid-template-columns: repeat(5, minmax(0, 1fr)); } }

@@ -15,14 +15,16 @@ Private, machine-local notes (if present): `CLAUDE.local.md`.
 
 ## Layout
 - `ite_core/` pure functions, no Shiny, no disk writes: `nomogram`, `roster`, `names`, `mksap`,
-  `history`, `stats`, `pdf_reports`, `individual`, `detect` (what an uploaded file is; headers / first PDF pages only).
+  `history`, `stats`, `pdf_reports`, `individual`, `detect` (what an uploaded file is; headers / first PDF pages only), `abim` (ABIM
+  result PDFs → outcomes linked to graduates' ITE by name).
 - `tests/` pytest on synthetic fixtures only (`tests/conftest.py`). Run: `.venv/bin/python -m pytest`.
 - `scripts/validate_real_data.py <dir>` checks ite_core against a private real-data analysis (aggregates only).
 - `scripts/check_no_data.py` blocks data files / emails from commits (pre-commit + CI).
 - `app.py` page_navbar + footer; `modules/` one Shiny module per tab (`home` entry cards, `calculator`, `resident`, `upload_align`) plus `program_nav.py` (section boxes over a hidden navset `program_nav`), `program_tabs.py`
-  (Trends / Classes / Year-over-year sub-tabs under Program data), `board.py` (Board pass sub-tab), `mksap_tab.py` (MKSAP sub-tab), `items_tab.py` (Item gaps), `reports_tab.py` + `report_builder.py`
+  (Trends / Classes / Year-over-year sub-tabs under Program data), `board.py` (Board pass sub-tab), `mksap_tab.py` (MKSAP sub-tab), `items_tab.py` (Item gaps), `outcomes_tab.py` (Board outcomes; PD report only, never de-identified), `reports_tab.py` + `report_builder.py`
   (HTML report downloads) + `data_export.py` (combined .xlsx; builder is pure but lives in modules/ because it reuses plots), `common.py` (badges, citation, footer) and `plots.py` (plotly builders, updated in place via shinywidgets).
-- `upload_server()` returns a reactive `session.Dataset` (rosters, mksap, crosswalk, wide) — later tabs read it.
+- `upload_server()` returns (dataset, program, abim_data): a reactive `session.Dataset` (rosters, mksap, crosswalk,
+  wide), the parsed Program Performance Report, and combined ABIM results — later sections read them.
 - `ite_core/session.py` assembles uploads (pure); `ite_core/limits.py` caps + `UploadError`; `ite_core/demo.py` invented data.
 
 ## Environment

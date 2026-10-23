@@ -13,7 +13,7 @@ from pathlib import Path
 import pandas as pd
 from shiny import module, reactive, render, ui
 
-from ite_core import demo, detect, names
+from ite_core import abim, demo, detect, names
 from ite_core import mksap as mksap_mod
 from ite_core import session as S
 from ite_core.limits import MAX_FILE_MB, UploadError
@@ -89,6 +89,7 @@ def upload_server(input, output, session):
     is_demo = reactive.value(False)
     program: reactive.Value[dict | None] = reactive.value(None)
     program_err: reactive.Value[str | None] = reactive.value(None)
+    abim_reps: reactive.Value[list[dict]] = reactive.value([])  # parsed ABIM reports
     # files that were not loaded: (file name, why)
     skipped: reactive.Value[list[tuple[str, str]]] = reactive.value([])
 
@@ -128,6 +129,16 @@ def upload_server(input, output, session):
         if got[detect.PROGRAM] is not None:
             _load_program(got[detect.PROGRAM])
         notes = list(got["skipped"])
+        if got[detect.ABIM]:
+            reps = {r["file"]: r for r in abim_reps.get()}
+            for up in got[detect.ABIM]:
+                try:
+                    reps[up.name] = abim.parse_abim_pdf(up.data, up.name)
+                except UploadError as e:
+                    notes.append((up.name, str(e).removeprefix(f"“{up.name}” ")))
+                except Exception:
+                    notes.append((up.name, "could not be processed."))
+            abim_reps.set(list(reps.values()))
         if got[detect.CROSSWALK] is not None:
             err = _load_crosswalk(got[detect.CROSSWALK])
             if err:
@@ -144,6 +155,7 @@ def upload_server(input, output, session):
         program.set(None)
         program_err.set(None)
         skipped.set([])
+        abim_reps.set([])
         is_demo.set(False)
 
     @reactive.effect
@@ -154,6 +166,7 @@ def upload_server(input, output, session):
         roster_ups.set([S.Upload(n, b) for n, b in d["rosters"]])
         mksap_up.set(S.Upload(*d["mksap"]))
         program.set(demo.sample_program_report())
+        abim_reps.set(demo.sample_abim_reports())
         is_demo.set(True)
 
     @reactive.effect
@@ -272,6 +285,20 @@ def upload_server(input, output, session):
             "Add it to see which content areas and questions fell furthest below national.",
         )
         cw_state = "done" if prior_cw.get() is not None else "todo"
+        reps = abim_reps.get()
+        if reps:
+            ab_state = "done"
+            ab_status = (
+                "Exam years: "
+                + ", ".join(str(r["exam_year"]) for r in sorted(reps, key=lambda r: r["exam_year"] or 0))
+                + "."
+            )
+        else:
+            ab_state, ab_status = (
+                ("suggest", "Add it to compare predicted and actual board pass rates.")
+                if have_rosters
+                else ("todo", None)
+            )
         return ui.tags.ol(
             _item(
                 r_state,
@@ -303,6 +330,17 @@ def upload_server(input, output, session):
                 mk_status,
                 "MKSAP.",
                 extra=mksap_howto(),
+            ),
+            _item(
+                ab_state,
+                "ABIM exam results",
+                "optional",
+                "ABIM's program reports for the Internal Medicine Certification Exam — the Examination Results "
+                "report (pass/fail) or the Program Data Report (adds scores). Add one per exam year. Graduates are "
+                "linked to their ITE by name; include the rosters from their PGY-3 year.",
+                "ABIM's program reports for your program (PDF).",
+                ab_status,
+                "Board outcomes.",
             ),
             _item(
                 cw_state,
@@ -620,4 +658,10 @@ def upload_server(input, output, session):
         if cw is not None:
             yield S.crosswalk_csv(cw)
 
-    return dataset, program
+    @reactive.calc
+    def abim_data():
+        """(candidates, years) from every ABIM report added, or None."""
+        reps = abim_reps.get()
+        return abim.combine(reps) if reps else None
+
+    return dataset, program, abim_data

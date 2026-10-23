@@ -104,3 +104,59 @@ def resident_areas(long: pd.DataFrame, rid: str) -> pd.DataFrame | None:
     out = pd.DataFrame(rows).sort_values("percentile", ascending=False).reset_index(drop=True)
     out.attrs["exam_year"] = int(row.Exam_Year)
     return out
+
+
+RANGE_LEVEL = 0.80  # central share of the "likely range" for the number of passes
+
+
+def passes_distribution(probs) -> np.ndarray:
+    """Exact distribution of the number of passes among independent residents (Poisson-binomial).
+
+    Element k is P(exactly k pass). Built by convolution — exact, and instant for program-sized groups.
+    """
+    dist = np.array([1.0])
+    for p in probs:
+        dist = np.convolve(dist, [1 - p, p])
+    return dist
+
+
+def likely_range(probs, level: float = RANGE_LEVEL) -> tuple[int, int]:
+    """Smallest and largest number of passes in the central `level` of the distribution."""
+    cdf = np.cumsum(passes_distribution(probs))
+    tail = (1 - level) / 2
+    lo = int(np.searchsorted(cdf, tail - 1e-12))
+    hi = int(np.searchsorted(cdf, 1 - tail - 1e-12))
+    return lo, min(hi, len(cdf) - 1)
+
+
+def class_pass_rates(bt: pd.DataFrame, level: float = RANGE_LEVEL) -> pd.DataFrame:
+    """Projected ABIM pass rate for each current class (PGY level).
+
+    projected = mean of the residents' estimated pass probabilities (the expected share passing); lo/hi = likely
+    range for the number who pass, assuming residents pass or fail independently and the estimates are exact — so it
+    reflects chance only, not uncertainty in the nomogram. Residents without a current-year estimate are counted
+    in `missing`, not in n.
+    """
+    cy = bt.attrs["current_year"]
+    rows = []
+    for p in sorted((int(x) for x in bt.PGY.dropna().unique()), reverse=True):  # closest to the exam first
+        if p not in (1, 2, 3):
+            continue
+        probs = bt.loc[bt.PGY == p, f"Prob_{cy}"]
+        ok = probs.dropna().to_numpy(dtype=float)
+        lo, hi = likely_range(ok, level) if len(ok) else (0, 0)
+        rows.append(
+            dict(
+                PGY=p,
+                grad_class=cy + 4 - p,
+                n=len(ok),
+                missing=int(probs.isna().sum()),
+                projected=float(ok.mean()) if len(ok) else np.nan,
+                expected_passes=float(ok.sum()),
+                lo=lo,
+                hi=hi,
+            )
+        )
+    out = pd.DataFrame(rows, columns=["PGY", "grad_class", "n", "missing", "projected", "expected_passes", "lo", "hi"])
+    out.attrs.update(current_year=cy, level=level)
+    return out

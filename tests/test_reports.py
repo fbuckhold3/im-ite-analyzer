@@ -124,3 +124,23 @@ def test_deidentified_tiles_respect_suppression(ds, program):
     html = R.content_without_library(R.build_report(data, program, deidentified=True).decode())
     assert "On the watch list" not in html and "tierbar" not in html.split("</style>")[1]
     assert "PGY-2/3 below Low risk" in html
+
+
+def test_projected_pass_rate_in_reports(ds):
+    data, _ = ds
+    ident = R.content_without_library(R.build_report(data, None, deidentified=False).decode())
+    deid = R.content_without_library(R.build_report(data, None, deidentified=True).decode())
+    assert "Projected ABIM pass rate" in ident and "likely" in ident
+    assert "Projected ABIM pass rate" in deid and "pass</div>" not in deid  # no "likely a–b pass" range
+
+
+def test_projected_pass_rate_suppressed_for_small_classes(ds):
+    data, _ = ds
+    long = data.rosters.long
+    cy = data.rosters.current_year
+    interns = long[(long.PGY == 1) & (long.Exam_Year == cy)].ID.unique()
+    keep = long[~long.ID.isin(interns[3:])]  # 3 current interns
+    r = S.Rosters(long=keep, files=data.rosters.files, current_year=data.rosters.current_year)
+    small = S.Dataset(rosters=r, mksap=None, crosswalk=None, wide=S.build_wide(r, None, None))
+    html = R.content_without_library(R.build_report(small, None, deidentified=True).decode())
+    assert "fewer than 5 residents" in html

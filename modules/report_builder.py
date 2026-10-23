@@ -75,6 +75,17 @@ color:var(--mid)} .b-Low{background:var(--low-bg);color:var(--low)}
 footer{margin-top:28px;color:var(--soft);font-size:.85rem}
 a{color:var(--primary)} .print-footer{display:none}
 .hint{color:var(--soft);font-size:.9rem;max-width:80ch}
+.tier{display:inline-block;padding:.1rem .55rem;border-radius:999px;font-size:.8rem;font-weight:600;border:1px solid}
+.tier-high{color:var(--high);background:var(--high-bg)} .tier-intermediate{color:var(--mid);background:var(--mid-bg)}
+.tier-low{color:var(--low);background:var(--low-bg)}
+.oc-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:.5rem 0 1rem}
+.oc-card{border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.oc-year{font-weight:700;margin-bottom:.4rem} .oc-pair{display:flex;gap:1.5rem}
+.oc-num{font-size:1.9rem;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.oc-obs{color:var(--primary)}
+.oc-lab{font-size:.82rem;color:var(--soft)} .oc-note{font-size:.85rem;color:var(--soft);margin:.4rem 0 0}
+.oc-res{display:inline-block;border-radius:999px;padding:.05rem .5rem;font-size:.8rem;font-weight:700}
+.oc-pass{background:#d3e6f7;color:#0b4a8b} .oc-fail{background:#fbd9c7;color:#8a2a00}
 .items-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
 .items-table{margin:0;font-size:.88rem} .items-table th{position:static} .it-gap{text-align:center}
 .it-area{white-space:nowrap;font-weight:600} .it-obj{min-width:14rem}
@@ -290,6 +301,38 @@ def _how_to_read() -> Tag:
     )
 
 
+def _class_rates(bt, deid) -> Tag | None:
+    """Projected ABIM pass rate per class. De-identified: rate only (the range would reveal how many are below Low
+    risk), and classes under 5 residents suppressed."""
+    cr = board.class_pass_rates(bt)
+    tiles = []
+    for r in cr.itertuples():
+        if r.n == 0:
+            continue
+        if deid and r.n < SMALL_N:
+            tiles.append(_kpi("—", f"Class of {r.grad_class}", f"Now PGY-{r.PGY} · fewer than 5 residents"))
+            continue
+        context = f"Now PGY-{r.PGY} · n = {r.n}" + ("" if deid else f" · likely {r.lo}–{r.hi} pass")
+        tiles.append(_kpi(f"{math.floor(100 * r.projected + 1e-9)}%", f"Class of {r.grad_class}", context))
+    if not tiles:
+        return None
+    return tags.div(
+        tags.h3("Projected ABIM pass rate, by class"),
+        tags.div(*tiles, class_="kpis"),
+        tags.p(
+            "Average of each resident's estimated chance of passing — the share expected to pass if the estimates "
+            "hold. PGY-1 projections rest on the intern ITE and are the least informative."
+            + (
+                ""
+                if deid
+                else f" “Likely” = middle {int(100 * cr.attrs['level'])}% range by chance alone, assuming independent "
+                "results; it does not include uncertainty in the estimate itself."
+            ),
+            class_="note",
+        ),
+    )
+
+
 def _board(ds, cutoffs, deid) -> Tag | None:
     if ds is None or ds.wide is None:
         return None
@@ -330,7 +373,7 @@ def _board(ds, cutoffs, deid) -> Tag | None:
         else:
             take = f"{low} of {n} PGY-2 and PGY-3 residents are in Low risk."
         head = ["", _badge("Below Low risk", "High"), _badge("Low risk", "Low")]
-        return _card("board", title, take, intro, _table(head, rows, num=(1, 2)), changes)
+        return _card("board", title, take, _class_rates(bt, True), intro, _table(head, rows, num=(1, 2)), changes)
 
     rows = [
         [
@@ -383,6 +426,7 @@ def _board(ds, cutoffs, deid) -> Tag | None:
         "board",
         title,
         take,
+        _class_rates(bt, False),
         tags.div(
             tags.div(
                 intro,
@@ -588,6 +632,44 @@ def _items(program) -> Tag | None:
     )
 
 
+def _outcomes(outcomes, deid) -> Tag | None:
+    """ABIM results vs ITE prediction — confidential PD report only (never the de-identified summary)."""
+    if deid or not outcomes or outcomes["table"].empty:
+        return None
+    from .outcomes_tab import anon_table, tier_table, year_cards
+
+    t, summary = outcomes["table"], outcomes["summary"]
+    last = summary.iloc[-1]
+    take = (
+        f"{int(last.exam_year)}: predicted {math.floor(100 * last.predicted + 1e-9)}% from the ITE, "
+        f"{round(100 * last.observed_linked)}% actually passed ({int(last.linked)} graduates linked)."
+        if last.linked
+        else None
+    )
+    ps = outcomes["years"].passing_score.dropna() if "passing_score" in outcomes["years"] else []
+    parts = [
+        year_cards(summary),
+        tags.h3("Outcomes by predicted risk tier"),
+        tier_table(outcomes["tiers"]),
+        tags.div(
+            tags.div(_fig(plots.outcome_strip(t))),
+            tags.div(_fig(plots.abim_score_scatter(t, int(ps.iloc[0]) if len(ps) else None)))
+            if t.score.notna().any()
+            else None,
+            class_="grid2",
+        ),
+        tags.h3("Each graduate: estimate, MKSAP and result (no names)"),
+        anon_table(t) if t.predicted.notna().any() else tags.p("No takers linked to an ITE record.", class_="note"),
+        tags.p(
+            "Takers linked to their ITE by name; predicted = estimated pass probability from the last ITE before "
+            "graduating (approximation of McDonald et al. 2020). MKSAP from the current export, matched by name. "
+            "Small numbers: a check on the estimate, not a verdict on the program.",
+            class_="note",
+        ),
+    ]
+    return _card("outcomes", "Board outcomes: ABIM results vs ITE prediction", take, *parts)
+
+
 def _methods(deid) -> Tag:
     return _card(
         "methods",
@@ -615,7 +697,7 @@ def _methods(deid) -> Tag:
 
 
 # ------------------------------------------------------------------------------------------- build
-def included_sections(ds, program) -> list[str]:
+def included_sections(ds, program, outcomes=None) -> list[str]:
     out = []
     if ds is not None and ds.wide is not None:
         out += ["ABIM pass estimates", "ITE results over time"]
@@ -625,6 +707,8 @@ def included_sections(ds, program) -> list[str]:
             out.append("MKSAP")
     if program is not None:
         out.append("Item-level gaps")
+    if outcomes and not outcomes["table"].empty:
+        out.append("Board outcomes (PD report only)")
     return out
 
 
@@ -638,7 +722,7 @@ def _program_name(ds, program) -> str:
     return "Internal Medicine Residency Program"
 
 
-def build_report(ds, program, deidentified: bool, cutoffs=DEFAULT_CUTOFFS) -> bytes:
+def build_report(ds, program, deidentified: bool, cutoffs=DEFAULT_CUTOFFS, outcomes=None) -> bytes:
     year = (ds.rosters.current_year if ds is not None else None) or (program or {}).get("exam_year") or ""
     title = f"{year} ITE {'Program Summary' if deidentified else 'Program Report'}".strip()
     today = dt.date.today().isoformat()
@@ -662,6 +746,7 @@ def build_report(ds, program, deidentified: bool, cutoffs=DEFAULT_CUTOFFS) -> by
         _yoy(ds, deidentified),
         _mksap(ds, deidentified),
         _items(program),
+        _outcomes(outcomes, deidentified),
     ]
     print_footer = tags.div(
         (

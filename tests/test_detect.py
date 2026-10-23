@@ -73,3 +73,12 @@ def test_program_report_with_cover_page():
     c.drawString(72, 720, "PROGRAM PERFORMANCE REPORT")
     c.save()
     assert D.detect("p.pdf", buf.getvalue())[0] == D.PROGRAM
+
+
+def test_abim_pdf_detected_and_routed():
+    from ite_core.session import Upload
+
+    pdf = _pdf("2026 INTERNAL MEDICINE CERTIFICATION EXAMINATION RESULTS", "Tester, Alex      Pass")
+    assert D.detect("err.pdf", pdf)[0] == D.ABIM
+    got = D.sort_uploads([Upload("err.pdf", pdf)])
+    assert [u.name for u in got[D.ABIM]] == ["err.pdf"] and not got["skipped"]

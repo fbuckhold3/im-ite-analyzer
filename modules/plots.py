@@ -583,6 +583,109 @@ def area_ranks_heatmap(ranks, total: bool = True):
     return widget_safe(fig)
 
 
+OUTCOME_COLOR = {True: "#0072B2", False: "#D55E00"}  # Okabe-Ito blue (pass) / vermillion (fail)
+
+
+def outcome_strip(t, low_cut: float = nomogram.DEFAULT_CUTOFFS[1]):
+    """Each linked ABIM taker as a dot: x = estimated pass probability from their last ITE, row = actual result.
+    Unlabeled on purpose (shown in the app and the PD report without names). A small fixed vertical spread keeps
+    overlapping dots visible without randomness."""
+    d = t[t.predicted.notna()].reset_index(drop=True)
+    rows = {True: 1.0, False: 0.0}
+    fig = go.Figure()
+    for passed, label in ((True, "Passed"), (False, "Did not pass")):
+        s = d[d.passed == passed]
+        spread = (((s.index.to_numpy() * 37) % 9) - 4) * 0.035
+        fig.add_trace(
+            go.Scatter(
+                x=100 * s.predicted.to_numpy(),
+                y=rows[passed] + spread,
+                mode="markers",
+                name=label,
+                marker=dict(
+                    size=12,
+                    color=OUTCOME_COLOR[passed],
+                    symbol="circle" if passed else "diamond",
+                    line=dict(color="#1a1a1a", width=0.8),
+                    opacity=0.85,
+                ),
+                customdata=s[["exam_year", "ite_pct"]].to_numpy(),
+                hovertemplate=f"{label} · %{{customdata[0]}} exam<br>last ITE %{{customdata[1]:.0f}}% correct · "
+                "estimated %{x:.0f}%<extra></extra>",
+                showlegend=False,
+            )
+        )
+    fig.add_vline(x=100 * low_cut, line=dict(color="#0b6e4f", dash="dot", width=1.2))
+    fig.add_annotation(
+        x=100 * low_cut,
+        y=1.0,
+        yref="paper",
+        yanchor="bottom",
+        text=f"Low risk ≥ {int(100 * low_cut)}%",
+        showarrow=False,
+        font=dict(size=11, color="#0b6e4f"),
+        xanchor="right",
+    )
+    fig.update_layout(
+        height=240,
+        margin=dict(l=10, r=15, t=30, b=45),
+        template="plotly_white",
+        modebar=MODEBAR,
+        font=FONT,
+        xaxis=dict(title="Estimated chance of passing from the last ITE (%)", range=[0, 101]),
+        yaxis=dict(
+            tickvals=[0, 1], ticktext=["Did not pass", "Passed"], range=[-0.5, 1.5], automargin=True, showgrid=False
+        ),
+    )
+    return widget_safe(fig)
+
+
+def abim_score_scatter(t, passing_score=None):
+    """ABIM standardized score (released scores only) against the last ITE percent correct; passing score line."""
+    d = t[t.score.notna() & t.ite_pct.notna()]
+    fig = go.Figure()
+    for passed, label in ((True, "Passed"), (False, "Did not pass")):
+        s = d[d.passed == passed]
+        fig.add_trace(
+            go.Scatter(
+                x=s.ite_pct,
+                y=s.score,
+                mode="markers",
+                name=label,
+                marker=dict(
+                    size=11,
+                    color=OUTCOME_COLOR[passed],
+                    symbol="circle" if passed else "diamond",
+                    line=dict(color="#1a1a1a", width=0.8),
+                ),
+                hovertemplate="Last ITE %{x:.0f}% correct · ABIM score %{y:.0f}<extra></extra>",
+            )
+        )
+    if passing_score:
+        fig.add_hline(y=passing_score, line=dict(color="#b3261e", dash="dash", width=1.2))
+        fig.add_annotation(
+            xref="paper",
+            x=0.0,
+            y=passing_score,
+            text=f"Passing score {passing_score}",
+            showarrow=False,
+            yshift=10,
+            xanchor="left",
+            font=dict(size=11, color="#b3261e"),
+        )
+    fig.update_layout(
+        height=360,
+        margin=dict(l=10, r=15, t=30, b=45),
+        template="plotly_white",
+        modebar=MODEBAR,
+        font=FONT,
+        xaxis=dict(title="Last ITE before graduating — % correct"),
+        yaxis=dict(title="ABIM standardized score"),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    )
+    return widget_safe(fig)
+
+
 def add_targets(fig, targets, cutoffs=nomogram.DEFAULT_CUTOFFS):
     """Mark where each later PGY curve reaches the Low-risk cutoff: [(pgy, pct_needed), ...]."""
     if not targets:

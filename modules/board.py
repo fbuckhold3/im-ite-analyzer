@@ -32,6 +32,7 @@ def _num(x, digits=0, suffix=""):
 @module.ui
 def board_ui():
     return ui.div(
+        ui.output_ui("class_rates"),
         ui.card(
             ui.card_header("Estimated ABIM pass probability — current residents"),
             ui.layout_columns(
@@ -120,6 +121,42 @@ def board_server(input, output, session, dataset):
                 "informative for PGY-2 and PGY-3.",
                 class_="hint",
             ),
+        )
+
+    @render.ui
+    def class_rates():
+        t = bt()
+        if t is None:
+            return None
+        cr = board.class_pass_rates(t)
+        if cr.empty:
+            return None
+        tiles = []
+        for r in cr.itertuples():
+            if r.n == 0:
+                continue
+            tiles.append(
+                ui.div(
+                    ui.div(fmt_prob(r.projected), class_="stat-value"),
+                    ui.div(f"Class of {r.grad_class}", class_="stat-name"),
+                    ui.div(f"Now PGY-{r.PGY} · {r.n} resident{'s' * (r.n != 1)}", class_="stat-sub"),
+                    ui.div(f"Likely {r.lo}–{r.hi} of {r.n} pass", class_="stat-range"),
+                    ui.div("Least informative: intern ITE", class_="stat-caveat") if r.PGY == 1 else None,
+                    class_="stat-tile",
+                )
+            )
+        missing = int(cr.missing.sum())
+        return ui.card(
+            ui.card_header("Projected ABIM pass rate, by class"),
+            ui.div(*tiles, class_="stat-tiles"),
+            ui.p(
+                "Projected pass rate = the average of each resident's estimated chance of passing — the share of the "
+                f"class expected to pass if the estimates hold. “Likely” is the middle {int(100 * cr.attrs['level'])}% "
+                "range for the number who pass, by chance alone; it assumes each resident's result is independent and "
+                "does not include uncertainty in the estimate itself (an approximation of McDonald et al. 2020).",
+                class_="hint",
+            ),
+            ui.p(f"{missing} resident(s) without a {cy()} score are not included.", class_="hint") if missing else None,
         )
 
     @render_plotly

@@ -17,12 +17,13 @@ import pypdf
 from . import mksap, names
 from .roster import _canon
 
-ROSTER, MKSAP, CROSSWALK, PROGRAM, EXAMINEE, UNKNOWN = (
+ROSTER, MKSAP, CROSSWALK, PROGRAM, EXAMINEE, ABIM, UNKNOWN = (
     "roster",
     "mksap",
     "crosswalk",
     "program_report",
     "examinee_report",
+    "abim",
     "unknown",
 )
 
@@ -32,6 +33,7 @@ LABEL = {
     CROSSWALK: "Saved MKSAP crosswalk",
     PROGRAM: "Program Performance Report",
     EXAMINEE: "Examinee Performance Report",
+    ABIM: "ABIM exam results",
     UNKNOWN: "Not recognized",
 }
 
@@ -77,7 +79,9 @@ def detect(name: str, data: bytes) -> tuple[str, str]:
             return PROGRAM, ""
         if "CANDIDATE ID" in flat or "EXAMINEE PERFORMANCE" in flat:
             return EXAMINEE, ""
-        return UNKNOWN, "is a PDF but not an ACP IM-ITE report"
+        if "INTERNAL MEDICINE CERTIFICATION EXAM" in flat:
+            return ABIM, ""
+        return UNKNOWN, "is a PDF but not an ACP IM-ITE or ABIM results report"
     if ext in (".csv", ".xlsx", ".xls"):
         cols = _header(data, ext)
         if cols is None:
@@ -101,14 +105,14 @@ EXAMINEE_NOTE = (
 def sort_uploads(uploads) -> dict:
     """Group uploads (objects with .name and .data) by kind.
 
-    -> {roster: [...], mksap: last or None, program_report: last or None, crosswalk: last or None,
+    -> {roster: [...], abim: [...], mksap: last or None, program_report: last or None, crosswalk: last or None,
         skipped: [(name, why), ...]}. A resident's Examinee report is skipped with a pointer to the right page.
     """
-    out = {ROSTER: [], MKSAP: None, PROGRAM: None, CROSSWALK: None, "skipped": []}
+    out = {ROSTER: [], ABIM: [], MKSAP: None, PROGRAM: None, CROSSWALK: None, "skipped": []}
     for up in uploads:
         kind, why = detect(up.name, up.data)
-        if kind == ROSTER:
-            out[ROSTER].append(up)
+        if kind in (ROSTER, ABIM):
+            out[kind].append(up)
         elif kind in (MKSAP, PROGRAM, CROSSWALK):
             out[kind] = up
         else:

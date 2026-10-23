@@ -15,6 +15,7 @@ from modules.common import REPO, citation, footer, how_to_read
 from modules.home import home_server, home_ui
 from modules.items_tab import items_server, items_ui
 from modules.mksap_tab import mksap_server, mksap_ui
+from modules.outcomes_tab import outcomes_server, outcomes_ui
 from modules.program_nav import program_nav_server, program_nav_ui
 from modules.program_tabs import classes_server, classes_ui, trends_server, trends_ui, yoy_server, yoy_ui
 from modules.reports_tab import reports_server, reports_ui
@@ -81,6 +82,7 @@ app_ui = ui.page_navbar(
             ui.nav_panel("Year over year", yoy_ui("yoy"), value="yoy"),
             ui.nav_panel("MKSAP", mksap_ui("mksap"), value="mksap"),
             ui.nav_panel("Item gaps", items_ui("items"), value="items"),
+            ui.nav_panel("Board outcomes", outcomes_ui("outcomes"), value="outcomes"),
             ui.nav_panel("Reports", reports_ui("reports"), value="reports"),
             id="program_nav",
         ),
@@ -101,15 +103,17 @@ def server(input, output, session):
     home_server(input, session)
     calculator_server("calc")
     resident_server("me")
-    dataset, program = upload_server("upload")  # session dataset + parsed Program Performance Report
-    program_nav_server(input, session, dataset, program)
+    # session dataset + parsed Program Performance Report + ABIM results
+    dataset, program, abim_data = upload_server("upload")
+    program_nav_server(input, session, dataset, program, abim_data)
     trends_server("trends", dataset=dataset)
     classes_server("classes", dataset=dataset)
     yoy_server("yoy", dataset=dataset)
     board_server("board", dataset=dataset)
     mksap_server("mksap", dataset=dataset)
     items_server("items", program=program)
-    reports_server("reports", dataset=dataset, program=program)
+    outcomes = outcomes_server("outcomes", dataset=dataset, abim_data=abim_data)
+    reports_server("reports", dataset=dataset, program=program, outcomes=outcomes)
 
 
 app = App(app_ui, server)

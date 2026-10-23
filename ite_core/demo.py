@@ -388,3 +388,55 @@ def sample_resident_program_report() -> dict:
         items=flag_items(items),
         file="DEMO Program Performance Report (sample resident)",
     )
+
+
+def _abim_pages(year: int, rows: list[tuple[str, str, str]], program_data: bool, rates=None) -> list[str]:
+    """ABIM-style text pages (invented): rows of (name, result, score-or-'Withheld by Candidate')."""
+    head = f"{year} INTERNAL MEDICINE CERTIFICATION EXAMINATION RESULTS\n" + "CANDIDATE NAME".ljust(60) + "EXAM RESULT"
+    head += "        STANDARDIZED SCORE\n" if program_data else "\n"
+    body = "\n".join(f"{n:<60}{r:<12}{s if program_data else ''}".rstrip() for n, r, s in rows)
+    pages = [head + body]
+    if program_data:
+        ours, everyone = rates
+        pages.insert(
+            0,
+            f"{year} OVERALL PROGRAM PERFORMANCE FOR INTERNAL MEDICINE\n"
+            f"Candidates Across\nAll Programs: {everyone}%\nCandidates From\nYour Program: {ours}%\n",
+        )
+        pages.append("Note: The passing score for this exam is 371.\n")
+    return pages
+
+
+def sample_abim_reports(seed: int = 3) -> list[dict]:
+    """Invented ABIM results for the demo program's two most recent graduating classes: a Program Data Report (with
+    scores) for one exam year and an Examination Results report (pass/fail only) for the next. Results follow each
+    graduate's estimated pass probability from their PGY-3 ITE, with chance. One name is spelled differently so the
+    manual-linking step has something to show."""
+    from . import abim  # local: abim imports names, which is heavier than demo needs elsewhere
+
+    rng = np.random.default_rng(seed)
+    d = make_demo()
+    from . import session as S
+
+    long = S.load_rosters([S.Upload(n, b) for n, b in d["rosters"]]).long
+    cy = int(long.Exam_Year.max())
+    out = []
+    for grad, program_data in ((cy - 1, True), (cy, False)):
+        g = long[(long.Grad_Class == grad) & (long.PGY == 3)].sort_values("Name")
+        rows = []
+        for i, r in enumerate(g.itertuples()):
+            p = float(r.Pass_Prob)
+            passed = rng.random() < min(0.995, p)
+            score = int(np.clip(371 + (45 if passed else -35) + 60 * (p - 0.9) + rng.normal(0, 30), 210, 790))
+            score = max(score, 371) if passed else min(score, 370)
+            name = r.Name
+            if i == 2:  # a different first name than on the ITE roster -> needs a manual link
+                last = name.split(",")[0]
+                name = f"{last}, Jordan"
+            withheld = program_data and i == 4
+            rows.append((name, "Pass" if passed else "Fail", "Withheld by Candidate" if withheld else str(score)))
+        n_pass = sum(r[1] == "Pass" for r in rows)
+        rates = (int(100 * n_pass / len(rows)), 87)
+        pages = _abim_pages(grad, rows, program_data, rates)
+        out.append(abim.parse_abim_text(pages, f"ABIM {'Program Data' if program_data else 'Results'} {grad} DEMO.pdf"))
+    return out

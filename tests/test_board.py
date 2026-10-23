@@ -72,3 +72,29 @@ def test_single_year_board(data):
     w = history.wide(long[long.Exam_Year == 2026])
     bt = board.board_table(w)
     assert (bt.Tier_change == "No prior").all() and bt.dPct.isna().all()
+
+
+def test_passes_distribution_matches_brute_force():
+    import itertools
+
+    import numpy as np
+
+    probs = [0.95, 0.6, 0.85, 0.3, 0.99]
+    brute = np.zeros(len(probs) + 1)
+    for outcome in itertools.product([0, 1], repeat=len(probs)):
+        brute[sum(outcome)] += np.prod([p if o else 1 - p for p, o in zip(probs, outcome, strict=True)])
+    assert np.allclose(board.passes_distribution(probs), brute)
+    assert board.likely_range([0.5] * 10) == (3, 7)
+    assert board.likely_range([1.0] * 4) == (4, 4)
+
+
+def test_class_pass_rates(data):
+    bt = board.board_table(data[1])
+    cy = bt.attrs["current_year"]
+    cr = board.class_pass_rates(bt).set_index("PGY")
+    for p in (1, 2, 3):
+        probs = bt.loc[bt.PGY == p, f"Prob_{cy}"].dropna()
+        assert cr.loc[p, "n"] == len(probs)
+        assert abs(cr.loc[p, "projected"] - probs.mean()) < 1e-12
+        assert cr.loc[p, "grad_class"] == cy + 4 - p
+        assert 0 <= cr.loc[p, "lo"] <= round(probs.sum()) <= cr.loc[p, "hi"] <= len(probs)
