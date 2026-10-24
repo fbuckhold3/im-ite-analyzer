@@ -359,3 +359,23 @@ body { background: var(--page); }
   align-items: center; padding: .5rem .6rem; border: 1px solid var(--rule); border-radius: 8px; margin-bottom: .4rem; }
 @media (max-width: 600px) { .oc-link-row { grid-template-columns: 1fr; } .oc-num { font-size: 1.6rem; } }
 @media (min-width: 1200px) { .ptiles { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+
+/* ---------- Upload: drop zone + files in this session ---------- */
+/* The file box's own text shows only the latest drop, which reads as if earlier files were replaced. */
+.dropzone .input-group > .form-control { display: none; }
+.dropzone .input-group-btn .btn, .dropzone .btn-file { border-radius: 8px !important; }
+.session-files { border: 1px solid var(--card-line); border-radius: 10px; background: #fff; margin: .25rem 0 1rem; }
+.sf-head { padding: .55rem .8rem; border-bottom: 1px solid var(--rule); font-size: .92rem; }
+.sf-list { list-style: none; margin: 0; padding: 0; }
+.sf-row { display: grid; grid-template-columns: auto 1fr auto; gap: .6rem; align-items: center; padding: .4rem .5rem .4rem .8rem;
+  border-bottom: 1px solid #eef1f4; font-size: .88rem; }
+.sf-row:last-child { border-bottom: 0; }
+.sf-kind { font-size: .74rem; font-weight: 700; border-radius: 6px; padding: .1rem .45rem; white-space: nowrap;
+  background: #eef1f4; color: #3d444d; }
+.sf-roster { background: #e7f0fb; color: #0b4a8b; } .sf-mksap { background: var(--low-bg); color: var(--low); }
+.sf-program_report { background: var(--mid-bg); color: var(--mid); } .sf-abim { background: #ede7f6; color: #4a2a8a; }
+.sf-name { overflow-wrap: anywhere; min-width: 0; }
+.sf-remove { border: 1px solid transparent; background: transparent; color: var(--ink-soft); border-radius: 6px;
+  width: 2rem; height: 2rem; cursor: pointer; font-size: .9rem; }
+.sf-remove:hover { border-color: var(--high); color: var(--high); background: var(--high-bg); }
+.sf-remove:focus-visible { outline: 3px solid var(--bs-primary); outline-offset: 1px; }

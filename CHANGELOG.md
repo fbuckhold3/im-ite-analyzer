@@ -45,6 +45,9 @@ versions follow [Semantic Versioning](https://semver.org/).
   points). `modules/report_builder.py`.
 
 ### Changed
+- Upload & Align lists **Files in this session** under the drop zone: every loaded file, what it was recognized as,
+  and a ✕ to remove just that one. Each drop adds to the list (the file box no longer shows only the latest batch,
+  which looked as if earlier files had been replaced).
 - **Program analysis upload**: one drop zone for every file. Each file is recognized from its contents
   (`ite_core/detect.py`: ACP roster, MKSAP overview/detail export, Program Performance Report, saved crosswalk) and
   ticked off a "What to upload" checklist that says what each file is, where to get it, what it unlocks, and

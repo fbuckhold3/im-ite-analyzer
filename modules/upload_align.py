@@ -44,19 +44,23 @@ def upload_ui():
             ui.card(
                 ui.card_header("1 · Add your files"),
                 privacy_note(),
-                ui.input_file(
-                    "dropped",
-                    "Drop every file you have here — the app works out what each one is.",
-                    multiple=True,
-                    accept=ACCEPT,
-                    button_label="Choose files…",
-                    width="100%",
+                ui.div(
+                    ui.input_file(
+                        "dropped",
+                        "Drop your files here — the app works out what each one is.",
+                        multiple=True,
+                        accept=ACCEPT,
+                        button_label="Add files…",
+                        width="100%",
+                    ),
+                    class_="dropzone",
                 ),
                 ui.p(
-                    f"Spreadsheets (.xlsx, .xls, .csv) and PDFs, up to {MAX_FILE_MB} MB each. You can add more files "
-                    "later; they are added to what's already here.",
+                    f"Add files any time — each drop adds to the files below (a file with the same name replaces "
+                    f"the earlier one). Spreadsheets (.xlsx, .xls, .csv) and PDFs, up to {MAX_FILE_MB} MB each.",
                     class_="hint",
                 ),
+                ui.output_ui("session_files"),
                 ui.output_ui("checklist"),
                 ui.output_ui("intake_notes"),
                 ui.div(
@@ -225,6 +229,65 @@ def upload_server(input, output, session):
         mk, _ = mksap()
         cw = crosswalk.get()
         return S.Dataset(rosters=r, mksap=mk, crosswalk=cw, wide=S.build_wide(r, mk, cw))
+
+    # ---------------------------------------------------------- session files
+    @render.ui
+    def session_files():
+        """Every file loaded in this session, what it was recognized as, and a ✕ to remove just that one."""
+        items = [(detect.ROSTER, u.name) for u in roster_ups.get()]
+        if mksap_up.get() is not None:
+            items.append((detect.MKSAP, mksap_up.get().name))
+        if program.get() is not None:
+            items.append((detect.PROGRAM, program.get().get("file") or "Program Performance Report"))
+        items += [(detect.ABIM, r["file"]) for r in abim_reps.get()]
+        if cw_name.get():
+            items.append((detect.CROSSWALK, cw_name.get()))
+        if not items:
+            return None
+        rows = []
+        for kind, name in items:
+            js = (
+                f"Shiny.setInputValue('{session.ns('remove_file')}', {{kind: {kind!r}, name: {name!r}, "
+                "n: Math.random()}, {priority: 'event'})"
+            )
+            rows.append(
+                ui.tags.li(
+                    ui.span(detect.LABEL[kind], class_=f"sf-kind sf-{kind}"),
+                    ui.span(name, class_="sf-name"),
+                    ui.tags.button(
+                        "✕",
+                        type="button",
+                        class_="sf-remove",
+                        onclick=js,
+                        title=f"Remove {name}",
+                        **{"aria-label": f"Remove {name}"},
+                    ),
+                    class_="sf-row",
+                )
+            )
+        return ui.div(
+            ui.div(ui.strong(f"Files in this session ({len(items)})"), class_="sf-head"),
+            ui.tags.ul(*rows, class_="sf-list"),
+            class_="session-files",
+        )
+
+    @reactive.effect
+    @reactive.event(input.remove_file)
+    def _remove_file():
+        a = input.remove_file() or {}
+        kind, name = a.get("kind"), a.get("name")
+        if kind == detect.ROSTER:
+            roster_ups.set([u for u in roster_ups.get() if u.name != name])
+        elif kind == detect.MKSAP:
+            mksap_up.set(None)
+        elif kind == detect.PROGRAM:
+            program.set(None)
+            program_err.set(None)
+        elif kind == detect.ABIM:
+            abim_reps.set([r for r in abim_reps.get() if r["file"] != name])
+        elif kind == detect.CROSSWALK:
+            prior_cw.set(None)
+            cw_name.set(None)
 
     # -------------------------------------------------------------- checklist
     def _item(state, title, req, what, where, status, unlocks=None, extra=None):

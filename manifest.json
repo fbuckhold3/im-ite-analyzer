@@ -131,10 +131,10 @@
       "checksum": "020f7ee3264db16a3dce9183af456a32"
     },
     "modules/upload_align.py": {
-      "checksum": "d49a0ffc1f7a10ecfeb56e9262a2b8b7"
+      "checksum": "248df5db87bc27777b3d8746b8437b2f"
     },
     "www/app.css": {
-      "checksum": "1266b49e9f1aa89960ee79a569b2a9fe"
+      "checksum": "942502133ca73b1e827843d177c2209f"
     }
   }
 }
