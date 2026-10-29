@@ -6,9 +6,17 @@ import math
 
 from shiny import ui
 
+from ite_core import nomogram
+
 REPO = "https://github.com/fbuckhold3/im-ite-analyzer"
 ORCID = "https://orcid.org/0000-0001-9049-3870"
 DOI = "https://doi.org/10.1097/ACM.0000000000003382"
+
+ESTIMATE_CAVEAT = (
+    "Estimates are reconstructed from the published ITE-only curves of residents who took the ITE in 2014–15 "
+    "and the ABIM exam in 2015–18, and are shown rounded down to the nearest 5% (“~85%”) — a guide, not a "
+    "precise prediction."
+)
 
 TIER_LABEL = {"High": "High risk", "Intermediate": "Intermediate risk", "Low": "Low risk"}
 
@@ -20,10 +28,8 @@ def tier_badge(tier: str | None):
 
 
 def fmt_prob(p) -> str:
-    """Round DOWN so the shown % never contradicts the tier (89.8% must not read as '90%' = Low)."""
-    if p is None or (isinstance(p, float) and math.isnan(p)):
-        return "—"
-    return f"{math.floor(100 * p + 1e-9):.0f}%"
+    """Estimated pass probability as shown everywhere (see nomogram.prob_label: ~5% steps, rounded down)."""
+    return nomogram.prob_label(p)
 
 
 def fmt_num(x, digits: int = 0) -> str:
@@ -39,7 +45,7 @@ def citation(short: bool = False):
             ui.tags.em("Acad Med"),
             " 2020 (",
             ui.a("doi", href=DOI, target="_blank", rel="noopener"),
-            ").",
+            "); 2014–18 cohorts, shown to the nearest 5%.",
         )
     return ui.p(
         "McDonald FS, Jurich D, Duhigg LM, Paniagua M, Chick D, Wells M, Williams A, Alguire P. "
@@ -48,6 +54,8 @@ def citation(short: bool = False):
         ui.tags.em("Acad Med."),
         " 2020;95(9):1388–1395. ",
         ui.a("doi:10.1097/ACM.0000000000003382", href=DOI, target="_blank", rel="noopener"),
+        " ",
+        ESTIMATE_CAVEAT,
         class_="citation",
     )
 

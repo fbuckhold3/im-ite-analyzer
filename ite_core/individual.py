@@ -6,6 +6,8 @@ Content areas are banded by the resident's national *percentile* (rank vs same-P
 
 from __future__ import annotations
 
+import math
+
 import pandas as pd
 
 from . import names
@@ -185,11 +187,23 @@ def rank_questions(report: dict, program: dict, top_misses: int = 20, top_wins: 
     )
 
 
-def target_gap_phrase(pct_now, target) -> str:
-    """'4.3 points more than this year's 56%' or 'you're already 1.9 points above it'."""
-    if pct_now is None or pct_now != pct_now:
+def target_sentence(pct_now, targets) -> str:
+    """Next year's Low-risk mark in one plain sentence (whole percentages).
+
+    Below the mark: how far to go. At or above it: just the mark, no "you're already X points above" — that read
+    oddly to high performers. targets = next_year_targets(...) -> [(pgy, pct), ...]; "" for PGY-3.
+    """
+    if not targets:
         return ""
-    gap = round(target - pct_now, 1)
-    if gap > 0:
-        return f"{gap:.1f} points more than this year's {pct_now:.0f}%"
-    return f"you're already {abs(gap):.1f} points above it" if gap < 0 else "the same as this year"
+    pgy, t = targets[0]
+    if pct_now is not None and pct_now == pct_now and pct_now < t:
+        gap = max(1, math.ceil(t - pct_now))
+        s = (
+            f"To reach Low risk next year (PGY-{pgy}), aim for about {t:.0f}% correct — {gap} point"
+            f"{'s' * (gap != 1)} more than this year's {pct_now:.0f}%"
+        )
+    else:
+        s = f"Next year's Low-risk mark (PGY-{pgy}): about {t:.0f}% correct"
+    if len(targets) > 1:
+        s += f"; at PGY-{targets[1][0]}, about {targets[1][1]:.0f}%"
+    return s + "."

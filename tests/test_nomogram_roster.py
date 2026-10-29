@@ -111,3 +111,37 @@ def test_long_wide_and_class(roster_files):
     assert lv.set_index(["PGY", "Exam_Year"]).n.sum() == len(long)
     m = history.class_matrix(long)
     assert 2027 in m.index and "change" in m
+
+
+def test_roster_with_title_rows_above_header():
+    import io
+
+    import pandas as pd
+
+    from ite_core import roster
+
+    body = pd.DataFrame(
+        {
+            "Candidate ID": ["1001", "1002"],
+            "Name": ["Test, A", "Test, B"],
+            "PGY": [1, 2],
+            "Total Test Percent Correct": [60, 65],
+        }
+    )
+    buf = io.StringIO()
+    buf.write("ACP IM-ITE roster export,,,\nSaved by someone,,,\n")
+    body.to_csv(buf, index=False)
+    d, _ = roster.load_roster(buf.getvalue().encode(), filename="2026 roster.csv")
+    assert list(d.ID) == ["1001", "1002"] and list(d.Pct_Correct) == [60, 65]
+
+
+def test_roster_error_names_found_columns():
+    import pandas as pd
+    import pytest
+
+    from ite_core import roster
+    from ite_core.limits import UploadError
+
+    data = pd.DataFrame({"Resident": ["x"], "Score": [1]}).to_csv(index=False).encode()
+    with pytest.raises(UploadError, match="Columns found: Resident, Score"):
+        roster.load_roster(data, filename="2026 roster.csv")

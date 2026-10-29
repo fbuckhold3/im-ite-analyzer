@@ -118,3 +118,37 @@ def test_outcomes_in_pd_report_without_names(demo_outcomes):
     deid = R.content_without_library(R.build_report(ds, None, deidentified=True, outcomes=o).decode())
     assert "Board outcomes" not in deid and "ABIM result" not in deid
     assert "Board outcomes (PD report only)" in R.included_sections(ds, None, o)
+
+
+def test_probable_link_waits_for_confirmation():
+    import pandas as pd
+
+    long = pd.DataFrame(
+        dict(
+            ID=["1", "2"],
+            Name=["Lee-Park, Jordan", "Tester, Alex"],
+            PGY=[3, 3],
+            Exam_Year=[2025, 2025],
+            Grad_Class=[2026, 2026],
+            Pct_Correct=[70.0, 64.0],
+            Percentile=[60.0, 30.0],
+            Pass_Prob=[0.96, 0.85],
+        )
+    )
+    r = abim.parse_abim_text(
+        [
+            "2026 INTERNAL MEDICINE CERTIFICATION EXAMINATION RESULTS\n"
+            "Park, Jordan                                   Pass\n"
+            "Tester, Alex                                   Pass\n"
+        ],
+        "r.pdf",
+    )
+    links = abim.link(r["candidates"], long).set_index("key")
+    sugg = links.loc["2026|Park, Jordan"]
+    assert sugg.tier == "Probable" and pd.isna(sugg.ID) and sugg.suggested == "1"
+    assert links.loc["2026|Tester, Alex", "ID"] == "2"
+    t = abim.outcome_table(r["candidates"], links.reset_index(), long)
+    assert t.predicted.notna().sum() == 1  # the suggestion is not counted yet
+    confirmed = abim.apply_links(links.reset_index(), {"2026|Park, Jordan": "1"})
+    t = abim.outcome_table(r["candidates"], confirmed, long)
+    assert t.predicted.notna().sum() == 2

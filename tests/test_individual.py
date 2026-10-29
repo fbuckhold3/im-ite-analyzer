@@ -71,8 +71,14 @@ def test_next_year_targets_and_wording():
     assert individual.next_year_targets(1) == [(2, 59.7), (3, 65.1)]
     assert individual.next_year_targets(2) == [(3, 65.1)]
     assert individual.next_year_targets(3) == []
-    assert individual.target_gap_phrase(56, 59.7) == "3.7 points more than this year's 56%"
-    assert individual.target_gap_phrase(67, 65.1) == "you're already 1.9 points above it"
+    t1 = individual.next_year_targets(1)
+    assert individual.target_sentence(56, t1) == (
+        "To reach Low risk next year (PGY-2), aim for about 60% correct — 4 points more than this year's 56%; "
+        "at PGY-3, about 65%."
+    )
+    above = individual.target_sentence(67, individual.next_year_targets(2))
+    assert above == "Next year's Low-risk mark (PGY-3): about 65% correct." and "already" not in above
+    assert individual.target_sentence(70, []) == ""
 
 
 def test_rank_questions_against_program_report():

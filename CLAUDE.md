@@ -52,8 +52,9 @@ Private, machine-local notes (if present): `CLAUDE.local.md`.
   strips Plotly's cloud buttons (`sendChartToCloud` in plotly.js 4 uploads chart data to Plotly Cloud).
 - De-identified outputs: suppress counts 1–4 and n<5 groups AND apply complementary suppression (totals are
   visible); privacy checks must exclude the embedded plotly.js source (`content_without_library`).
-- Tier cutoffs are a setting (default High <50%, Intermediate 50–90%, Low ≥90%). Display probabilities with
-  `common.fmt_prob` (rounds DOWN) so 89.8% never reads as "90%" next to an Intermediate badge.
+- Tier cutoffs are a setting (default High <50%, Intermediate 50–90%, Low ≥90%). Display probabilities only via
+  `nomogram.prob_label` / `common.fmt_prob` (~5% steps, rounded DOWN, "≥95%"/"<5%") — never a raw %.
+- Name matching (MKSAP, ABIM): only Exact or user-confirmed links feed analyses; Probable = suggestion.
 - `individual.ITE_TO_MKSAP` (ITE area → MKSAP section codes) is provisional, esp. GIM / Geriatrics.
 - pandas: `itertuples` renames columns starting with `_` — don't use underscore helper columns there.
 - Shiny suspends outputs it thinks are hidden; in a background browser pane nothing repaints, so scripted

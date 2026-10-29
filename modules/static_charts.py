@@ -89,7 +89,7 @@ def nomogram_png(points, cutoffs=nomogram.DEFAULT_CUTOFFS, width_in: float = 6.0
     for pgy, pct in targets:  # where each later PGY curve reaches the Low-risk cutoff
         ax.scatter([pct], [lo], s=150, marker="*", color=PGY_COLOR[pgy], edgecolor=INK, linewidth=0.8, zorder=5)
         ax.annotate(
-            f"PGY-{pgy}: {pct:.1f}%",
+            f"PGY-{pgy}: ~{pct:.0f}%",
             (pct, lo),
             xytext=(6, -12),
             textcoords="offset points",

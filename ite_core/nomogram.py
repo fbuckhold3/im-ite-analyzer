@@ -95,3 +95,21 @@ def curves(step: float = 1.0, lo: float = 20, hi: float = 100) -> pd.DataFrame:
         [pd.DataFrame(dict(PGY=p, Pct_Correct=x, Pass_Prob=[pass_prob(v, p) for v in x])) for p in NOMOGRAM],
         ignore_index=True,
     )
+
+
+DISPLAY_STEP = 5  # shown estimates are rounded DOWN to this many percentage points
+
+
+def prob_label(p) -> str:
+    """How an estimated pass probability is shown everywhere: rounded down to the nearest 5% and marked as
+    approximate ("~85%"), with "≥95%" and "<5%" at the ends. The curves are reconstructed from a 2014-2018 cohort,
+    so a single-point figure would overstate precision. Rounding down keeps the shown value consistent with the tier
+    (89.8% reads "~85%", never "90%" next to an Intermediate badge)."""
+    if p is None or p != p:
+        return "—"
+    v = int(100 * p + 1e-9)
+    if v >= 95:
+        return "≥95%"
+    if v < DISPLAY_STEP:
+        return "<5%"
+    return f"~{DISPLAY_STEP * (v // DISPLAY_STEP)}%"

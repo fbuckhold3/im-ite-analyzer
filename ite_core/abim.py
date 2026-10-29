@@ -123,22 +123,28 @@ def graduates(long: pd.DataFrame, exam_years) -> pd.DataFrame:
 
 
 def link(cands: pd.DataFrame, long: pd.DataFrame) -> pd.DataFrame:
-    """Automatic name links ABIM taker -> resident (ID), with the MKSAP matching rules. Returns one row per taker:
-    key, ID (or None), tier (Exact / Probable / Ambiguous / Unmatched)."""
+    """Automatic name links ABIM taker -> resident, with the MKSAP matching rules. Returns one row per taker:
+    key, ID, tier (Exact / Probable / Ambiguous / Unmatched), suggested.
+
+    Only Exact links count straight away (ID set). A Probable match is a suggestion (suggested set, ID None) until a
+    person confirms it, so similar names can't attach the wrong resident's ITE to a result."""
     if cands.empty:
-        return pd.DataFrame(columns=["key", "ID", "tier"])
+        return pd.DataFrame(columns=["key", "ID", "tier", "suggested"])
     grads = graduates(long, cands.exam_year.unique())
     people = cands.rename(columns={"key": "mk_key", "last": "mk_last", "first": "mk_first"})
     cw = names.match_mksap(grads[["ID", "Name"]], people)  # one row per graduate
     hit = cw.dropna(subset=["mksap_key"])[["mksap_key", "acp_id", "tier"]]
     out = cands[["key"]].merge(hit, left_on="key", right_on="mksap_key", how="left")
     out["tier"] = out.tier.fillna("Unmatched")
-    return out.rename(columns={"acp_id": "ID"})[["key", "ID", "tier"]]
+    out = out.rename(columns={"acp_id": "ID"})
+    out["suggested"] = out.ID.where(out.tier == "Probable")
+    out.loc[out.tier == "Probable", "ID"] = None
+    return out[["key", "ID", "tier", "suggested"]]
 
 
 def outcome_table(cands: pd.DataFrame, links: pd.DataFrame, long: pd.DataFrame, mksap_people=None) -> pd.DataFrame:
     """One row per ABIM taker: result, score, and (if linked) the last ITE before graduation with its pass estimate,
-    plus MKSAP volume / accuracy when the graduate's account is in the MKSAP export (auto-matched by name)."""
+    plus MKSAP volume / accuracy when the graduate's account is in the MKSAP export (exact name match only)."""
     t = cands.merge(links, on="key", how="left")
     grads = graduates(long, cands.exam_year.unique()) if not cands.empty else long.iloc[0:0]
     ite = grads[["ID", "PGY", "Exam_Year", "Pct_Correct", "Percentile", "Pass_Prob"]].rename(
@@ -155,7 +161,7 @@ def outcome_table(cands: pd.DataFrame, links: pd.DataFrame, long: pd.DataFrame, 
     t["mk_pct_correct"] = np.nan
     if mksap_people is not None and not grads.empty:
         mcw = names.match_mksap(grads[["ID", "Name"]], mksap_people)
-        mcw = mcw[mcw.tier.isin(["Exact", "Probable"])][["acp_id", "mksap_key"]]
+        mcw = mcw[mcw.tier == "Exact"][["acp_id", "mksap_key"]]  # exact only: no review step for graduates
         mk = mcw.merge(mksap_people, left_on="mksap_key", right_on="mk_key")[
             ["acp_id", "mk_answered", "mk_pct_correct"]
         ]

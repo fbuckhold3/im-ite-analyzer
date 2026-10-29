@@ -13,8 +13,12 @@ The study (≈31,000 U.S. IM residents taking the IM-ITE in 2014 or 2015 and the
 2015–2018) published curves of the probability of passing ABIM on the first attempt, by IM-ITE % correct,
 separately for PGY-1, PGY-2 and PGY-3.
 
-**Approximation used here.** The paper reports curves, not coefficients. We fit a logistic curve per PGY level
-to points read from the published figure:
+**Approximation used here.** The ITE-only curves (Figure 2; Supplemental Digital Appendix 1) are published as
+plots, not coefficients. The coefficients the paper does publish (Table 3; Appendix 3) belong to a different,
+multivariable model — ITE % correct adjusted for USMLE Step 1/2 CK/3, age, sex, medical-school location and MK
+milestones — reported as odds ratios without an intercept, so they cannot give a probability and their ITE odds
+ratio (e.g. 1.16 per point at PGY-3) is not the slope of the ITE-only curve. We therefore fit a logistic curve per
+PGY level to points read from the published figure:
 
 P(pass) = 1 / (1 + e^−(b0 + b1 × % correct))
 
@@ -26,9 +30,17 @@ P(pass) = 1 / (1 + e^−(b0 + b1 × % correct))
 
 PGY values above 3 use the PGY-3 curve.
 
+**Check against the paper's text.** The fitted curves reproduce every anchor the authors state: PGY-1 50% at ≈39%
+correct (fit: 39.0), PGY-3 50% at ≈55% (fit: 55.0), and PGY-3 at 39% → ≈3% (fit: 3.0%). The ITE-only slopes
+(odds ×1.19–1.24 per point) are steeper than the adjusted odds ratios, as expected once Step scores are removed.
+
+**How estimates are shown.** Rounded down to the nearest 5% and marked approximate ("~85%"; "≥95%" and "<5%" at
+the ends), with the cohort years stated wherever estimates appear. Rounding down keeps the shown value consistent
+with the tier. A program can check the curves against its own graduates in Board outcomes.
+
 **Limitations.**
 - An approximation of published curves, not the authors' model. Do not quote these as the authors' coefficients.
-- Fitted on 2014–2015 exam cohorts. Exam difficulty, the ABIM exam and pass rates have changed since.
+- Fitted on cohorts who took the ITE in 2014–2015 and the ABIM exam in 2015–2018. Exam difficulty, the ABIM exam and pass rates have changed since.
 - Uses % correct only. The source study found USMLE scores and other factors also predict passing.
 - A population-level association. It does not determine any individual's outcome.
 
@@ -79,7 +91,10 @@ only; the anonymous table has no names; never in the de-identified summary.
   can be reviewed and overridden. In the app, residents needing review are listed first, each with a suggested
   account (same surname first, then same initial); the reviewer confirms, picks another account, or marks
   "No MKSAP account" (residents are not required to have one). Picking an account that is already linked moves it,
-  and the resident it came from returns to the review list.
+  and the resident it came from returns to the review list. **Only Exact matches count automatically**; Probable
+  suggestions are left out of every MKSAP and ABIM analysis until someone confirms them (one click, or "Confirm
+  all suggestions"), so residents with similar names can't be joined to the wrong record unseen. Graduates'
+  MKSAP accounts in Board outcomes use Exact matches only.
 
 ## 4. Program analyses (`history.py`, `stats.py`)
 - **Graduating class** = exam year + 4 − PGY.

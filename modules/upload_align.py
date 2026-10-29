@@ -531,8 +531,9 @@ def upload_server(input, output, session):
             ui.card_header(f"3 · Link {r.current_year} residents to their MKSAP accounts"),
             ui.p(
                 "MKSAP exports have no ACP ID, so residents are matched by name (same surname and the same first name "
-                "or initial). Review anything listed under “Needs your review”. Residents without an MKSAP account "
-                "are fine — choose “No MKSAP account”.",
+                "or initial). Exact matches count right away; suggestions under “Needs your review” are left out "
+                "of the MKSAP analyses until you confirm them. Residents without an MKSAP account are fine — "
+                "choose “No MKSAP account”.",
                 class_="hint",
             ),
             ui.output_ui("match_summary"),

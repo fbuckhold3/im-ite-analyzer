@@ -25,7 +25,7 @@ from reportlab.lib.units import inch
 from reportlab.platypus import Image, KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from ite_core import board, individual
-from ite_core.nomogram import DEFAULT_CUTOFFS
+from ite_core.nomogram import DEFAULT_CUTOFFS, prob_label
 
 from . import static_charts
 
@@ -51,7 +51,7 @@ def _f(x, digits=0, suffix=""):
 
 
 def _prob(p):
-    return "—" if p is None or (isinstance(p, float) and math.isnan(p)) else f"{math.floor(100 * p + 1e-9):.0f}%"
+    return prob_label(p)
 
 
 def _p(text, style=BODY):
@@ -248,13 +248,7 @@ def resident_pdf(content: dict, cutoffs=DEFAULT_CUTOFFS) -> bytes:
     )
     targets = individual.next_year_targets(pgy, cutoffs)
     if targets:
-        txt = (
-            f"To be at {int(cutoffs[1] * 100)}% or higher next year (PGY-{targets[0][0]}), you need about "
-            f"<b>{targets[0][1]:.1f}%</b> correct ({individual.target_gap_phrase(s.get('pct_correct'), targets[0][1])})"
-        )
-        if len(targets) > 1:
-            txt += f"; at PGY-{targets[1][0]}, about <b>{targets[1][1]:.1f}%</b>"
-        target_par = _p(txt + ".", BODY)
+        target_par = _p(individual.target_sentence(s.get("pct_correct"), targets), BODY)
     else:
         target_par = _p(
             f"Low risk at PGY-{min(pgy, 3)} starts at about {_f(s.get('pct_needed_low_now'), 1)}% correct.", BODY
@@ -273,8 +267,8 @@ def resident_pdf(content: dict, cutoffs=DEFAULT_CUTOFFS) -> bytes:
         _p(
             "Stars mark the score needed at each later PGY level to reach the Low-risk cutoff. Estimates approximate "
             "McDonald FS, et al. <i>Acad Med.</i> 2020;95(9):1388–1395 (doi:10.1097/ACM.0000000000003382): "
-            "2014–2015 cohorts, percent correct only, a population-level association — not a prediction for any one "
-            "person. Educational use only.",
+            "ITE 2014–15 / ABIM 2015–18 cohorts, percent correct only, a population-level association — not a "
+            "prediction for any one person. Estimates are shown rounded down to the nearest 5%. Educational use only.",
             NOTE,
         ),
     ]

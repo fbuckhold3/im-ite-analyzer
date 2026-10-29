@@ -248,44 +248,68 @@ def outcomes_server(input, output, session, dataset, abim_data):
         if o is None:
             return None
         links, cands, long = o["links"], o["cands"], o["long"]
-        open_keys = links[links.ID.isna() & (links.tier != "Not ours")].key
+        open_rows = links[links.ID.isna() & (links.tier != "Not ours")]
         manual = links[links.tier.isin(["Manual", "Not ours"])]
         grads = abim.graduates(long, cands.exam_year.unique())
         taken = set(links.ID.dropna())
         free = grads[~grads.ID.isin(taken)].sort_values("Name")
-        options = [ui.tags.option("Choose the resident…", value="")] + [
-            ui.tags.option(f"{r.Name} (class of {int(r.Grad_Class)})", value=str(r.ID)) for r in free.itertuples()
-        ]
-        options.append(ui.tags.option("Not one of our ITE residents", value=NOT_OURS))
+        label = {str(r.ID): f"{r.Name} (class of {int(r.Grad_Class)})" for r in free.itertuples()}
         rows = []
-        for key in open_keys:
-            c = cands[cands.key == key].iloc[0]
-            js = (
-                f"Shiny.setInputValue('{session.ns('link_action')}', {{key: {key!r}, id: this.value, "
+        for r in open_rows.itertuples():
+            c = cands[cands.key == r.key].iloc[0]
+            suggested = str(r.suggested) if isinstance(r.suggested, str) and str(r.suggested) in label else None
+            options = [ui.tags.option("Choose the resident…", value="")] + [
+                ui.tags.option(lab, value=rid, selected=rid == suggested) for rid, lab in label.items()
+            ]
+            options.append(ui.tags.option("Not one of our ITE residents", value=NOT_OURS))
+            send = (
+                f"Shiny.setInputValue('{session.ns('link_action')}', {{key: {r.key!r}, id: %s, "
                 "n: Math.random()}, {priority: 'event'})"
             )
             rows.append(
                 ui.div(
-                    ui.div(ui.strong(c["name"]), ui.span(f" · {int(c.exam_year)} exam", class_="hint")),
-                    ui.tags.select(
-                        *options,
-                        class_="form-select form-select-sm",
-                        onchange=js,
-                        **{"aria-label": f"Resident for {c['name']}"},
+                    ui.div(
+                        ui.strong(c["name"]),
+                        ui.span(f" · {int(c.exam_year)} exam", class_="hint"),
+                        ui.span("Suggested match", class_="chip chip-probable oc-sugg") if suggested else None,
+                    ),
+                    ui.div(
+                        ui.tags.select(
+                            *options,
+                            class_="form-select form-select-sm",
+                            onchange=send % "this.value",
+                            **{"aria-label": f"Resident for {c['name']}"},
+                        ),
+                        ui.tags.button(
+                            "Confirm",
+                            type="button",
+                            class_="btn btn-sm btn-success",
+                            onclick=send % "this.previousElementSibling.value",
+                        )
+                        if suggested
+                        else None,
+                        class_="oc-link-controls",
                     ),
                     class_="oc-link-row",
                 )
             )
+        n_sugg = int(open_rows.suggested.notna().sum()) if "suggested" in open_rows else 0
         done = len(manual)
         if not rows and not done:
             return None
         return ui.card(
             ui.card_header(f"Link ABIM takers to residents ({len(rows)} to review)"),
             ui.p(
-                "These takers' names didn't match a graduate in your rosters automatically (different first name, "
-                "a name change, or their PGY-3 roster isn't uploaded). Names here stay in this session only.",
+                "Exact name matches are linked automatically. Suggested matches (similar names) and takers with no "
+                "match are left out of the outcomes until you confirm or choose the resident — a different first "
+                "name, a name change, or a missing PGY-3 roster are the usual reasons. Names stay in this session.",
                 class_="hint",
             ),
+            ui.input_action_button(
+                "confirm_suggested", f"Confirm all suggestions ({n_sugg})", class_="btn-outline-success btn-sm mb-2"
+            )
+            if n_sugg
+            else None,
             *rows,
             ui.p(f"{done} decided by you.", class_="hint") if done else None,
             ui.input_action_button("reset_links", "Undo my links", class_="btn-outline-secondary btn-sm")
@@ -293,6 +317,18 @@ def outcomes_server(input, output, session, dataset, abim_data):
             else None,
             class_="results-card",
         )
+
+    @reactive.effect
+    @reactive.event(input.confirm_suggested)
+    def _confirm_suggested():
+        o = outcomes()
+        if o is None:
+            return
+        links = o["links"]
+        sugg = links[links.ID.isna() & links.suggested.notna() & (links.tier == "Probable")]
+        d = dict(overrides.get())
+        d.update({k: s for k, s in zip(sugg.key, sugg.suggested, strict=True)})
+        overrides.set(d)
 
     @reactive.effect
     @reactive.event(input.link_action)

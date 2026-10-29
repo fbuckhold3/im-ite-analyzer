@@ -80,6 +80,30 @@ def read_table(source, filename: str | None = None) -> pd.DataFrame:
     return df
 
 
+_HEADER_HINTS = ({"id", "candidate_id"}, {"name"}, {"pgy", "pgy_level"}, {"total_test_percent_correct"})
+
+
+def _header_row(df: pd.DataFrame, scan: int = 10) -> pd.DataFrame:
+    """Use the real header row when a re-saved roster has title or blank rows above it.
+
+    If the first row already holds the roster columns nothing changes; otherwise the first of the next `scan` rows
+    that contains all of them becomes the header. Column names only — no data is inspected beyond those rows.
+    """
+
+    def is_header(values) -> bool:
+        canon = {_canon(v) for v in values if isinstance(v, str)}
+        return all(canon & alts for alts in _HEADER_HINTS)
+
+    if is_header(df.columns):
+        return df
+    for i in range(min(scan, len(df))):
+        if is_header(df.iloc[i].tolist()):
+            out = df.iloc[i + 1 :].copy()
+            out.columns = [str(v) if isinstance(v, str) else f"Unnamed: {j}" for j, v in enumerate(df.iloc[i])]
+            return out.dropna(how="all").reset_index(drop=True)
+    return df
+
+
 def load_roster(
     source, filename: str | None = None, year: int | None = None, include_pgy4: bool = False
 ) -> tuple[pd.DataFrame, dict]:
@@ -88,7 +112,7 @@ def load_roster(
     Output columns: ID, Name, Exam_Year, PGY, Pct_Correct, Percentile, Program_Number,
     Program_Name, then pc_<area> / ile_<area> for each content area present.
     """
-    raw = read_table(source, filename)
+    raw = _header_row(read_table(source, filename))
     cols = {_canon(c): c for c in raw.columns}
 
     def col(*names):
@@ -105,9 +129,10 @@ def load_roster(
     )
     missing = [k for k, v in required.items() if v is None]
     if missing:
+        found = [str(c) for c in raw.columns if not str(c).startswith("Unnamed")][:15]
         raise UploadError(
             f"“{_label(source, filename)}” is not an ACP roster file — missing column(s): "
-            f"{', '.join(missing)}. {ISSUE_HINT}"
+            f"{', '.join(missing)}. Columns found: {', '.join(found) or 'none'}. {ISSUE_HINT}"
         )
 
     yr = year or (year_from_filename(filename or source) if (filename or isinstance(source, (str, Path))) else None)

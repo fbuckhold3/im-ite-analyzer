@@ -40,7 +40,7 @@ def test_pdf_from_score_report():
         "Select antibiotics for an invented infection.",
         "(HVC)",
         "McDonald",
-        "To be at 90% or higher next year (PGY-3)",
+        "Next year's Low-risk mark (PGY-3)",
         "50th percentile and above",
     ):
         assert s in text, s

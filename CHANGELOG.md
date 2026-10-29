@@ -45,6 +45,15 @@ versions follow [Semantic Versioning](https://semver.org/).
   points). `modules/report_builder.py`.
 
 ### Changed
+- **Pass estimates are shown rounded down to the nearest 5%** ("~85%", "≥95%", "<5%") with the source cohort
+  (ITE 2014–15, ABIM 2015–18) stated wherever estimates appear; METHODS explains why the paper's published
+  coefficients (a multivariable model without an intercept) can't replace the reconstructed ITE-only curves.
+- **Only Exact name matches count automatically** (MKSAP and ABIM). Probable matches are suggestions that wait for
+  confirmation before entering any analysis.
+- Resident next-year target: a neutral line ("Next year's Low-risk mark (PGY-3): about 65% correct") when the
+  resident is already above it; whole percentages throughout.
+- Rosters with title or blank rows above the header are read (and recognized in the drop zone); a roster that
+  still can't be read lists the columns it found.
 - Upload & Align lists **Files in this session** under the drop zone: every loaded file, what it was recognized as,
   and a ✕ to remove just that one. Each drop adds to the list (the file box no longer shows only the latest batch,
   which looked as if earlier files had been replaced).

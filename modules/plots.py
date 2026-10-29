@@ -57,7 +57,7 @@ def nomogram_figure(cutoffs=nomogram.DEFAULT_CUTOFFS) -> go.Figure:
                 mode="lines",
                 name=f"PGY-{p}",
                 line=dict(color=PGY_COLOR[p], width=2.5),
-                hovertemplate=f"PGY-{p}: %{{x:.0f}}% correct → %{{y:.1%}}<extra></extra>",
+                hovertemplate=f"PGY-{p} curve at %{{x:.0f}}% correct<extra></extra>",
             )
         )
     fig.add_trace(
@@ -68,7 +68,7 @@ def nomogram_figure(cutoffs=nomogram.DEFAULT_CUTOFFS) -> go.Figure:
             name="Your scores",
             text=[],
             marker=dict(size=13, color=[], line=dict(color="#1a1a1a", width=1.5)),
-            hovertemplate="%{text}: %{x:.0f}% correct → %{y:.1%}<extra></extra>",
+            hovertemplate="%{text}<extra></extra>",
             showlegend=False,
         )
     )
@@ -114,7 +114,7 @@ def set_points(fig, rows) -> None:
     t = fig.data[POINTS_TRACE]
     t.x = [r[1] for r in rows]
     t.y = [r[2] for r in rows]
-    t.text = [f"PGY-{r[0]}" for r in rows]
+    t.text = [f"PGY-{r[0]}: {r[1]:.0f}% correct → {nomogram.prob_label(r[2])}" for r in rows]
     t.marker.color = [PGY_COLOR[min(3, max(1, int(r[0])))] for r in rows]
 
 
@@ -359,8 +359,11 @@ def program_nomogram(bt, cutoffs=nomogram.DEFAULT_CUTOFFS):
                     symbol={1: "circle", 2: "square", 3: "diamond"}[p],
                 ),
                 customdata=d.ID.values,
-                text=d.Name,
-                hovertemplate="%{text}<br>%{x:.0f}% correct → %{y:.1%}<br><i>click for details</i><extra></extra>",
+                text=[
+                    f"{n}<br>{x:.0f}% correct → {nomogram.prob_label(y)}"
+                    for n, x, y in zip(d.Name, d[f"Pct_{cy}"], d[f"Prob_{cy}"], strict=True)
+                ],
+                hovertemplate="%{text}<br><i>click for details</i><extra></extra>",
             )
         )
     fig.update_layout(height=420, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
@@ -696,7 +699,7 @@ def add_targets(fig, targets, cutoffs=nomogram.DEFAULT_CUTOFFS):
             y=[cutoffs[1]] * len(targets),
             mode="markers+text",
             name="Next-year targets",
-            text=[f"PGY-{p}: {pct:.1f}%" for p, pct in targets],
+            text=[f"PGY-{p}: ~{pct:.0f}%" for p, pct in targets],
             textposition="bottom right",
             textfont=dict(size=12, color="#1a1a1a"),
             marker=dict(

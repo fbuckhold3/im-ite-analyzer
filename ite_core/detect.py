@@ -15,7 +15,7 @@ import pandas as pd
 import pypdf
 
 from . import mksap, names
-from .roster import _canon
+from .roster import _canon, _header_row
 
 ROSTER, MKSAP, CROSSWALK, PROGRAM, EXAMINEE, ABIM, UNKNOWN = (
     "roster",
@@ -46,10 +46,11 @@ def _is_roster(columns) -> bool:
 
 
 def _header(data: bytes, ext: str) -> list[str] | None:
+    """Column names — from the first row, or from a header row a few rows down (title rows above it)."""
     try:
         buf = io.BytesIO(data)
-        df = pd.read_csv(buf, dtype=str, nrows=0) if ext == ".csv" else pd.read_excel(buf, dtype=str, nrows=0)
-        return [str(c).strip() for c in df.columns]
+        df = pd.read_csv(buf, dtype=str, nrows=12) if ext == ".csv" else pd.read_excel(buf, dtype=str, nrows=12)
+        return [str(c).strip() for c in _header_row(df).columns]
     except Exception:
         return None
 

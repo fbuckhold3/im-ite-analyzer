@@ -233,13 +233,7 @@ def resident_server(input, output, session):
             return None
         targets = individual.next_year_targets(a["pgy"])
         if targets:
-            parts = [f"<strong>{t[1]:.1f}%</strong> correct at PGY-{t[0]}" for t in targets]
-            lead = (
-                f"To be at 90% or higher next year (PGY-{targets[0][0]}), you need about {parts[0]}"
-                f" — {individual.target_gap_phrase(a['pct_correct'], targets[0][1])}"
-            )
-            rest = f"; at PGY-{targets[1][0]}, about {parts[1]}" if len(targets) > 1 else ""
-            target_text = ui.p(ui.HTML(lead + rest + "."), class_="target-line")
+            target_text = ui.p(individual.target_sentence(a["pct_correct"], targets), class_="target-line")
         else:
             target_text = ui.p(
                 f"Low risk at PGY-{min(a['pgy'], 3)} starts at about {fmt_num(a['pct_needed_low_now'], 1)}% correct.",

@@ -379,3 +379,5 @@ body { background: var(--page); }
   width: 2rem; height: 2rem; cursor: pointer; font-size: .9rem; }
 .sf-remove:hover { border-color: var(--high); color: var(--high); background: var(--high-bg); }
 .sf-remove:focus-visible { outline: 3px solid var(--bs-primary); outline-offset: 1px; }
+.oc-link-controls { display: flex; gap: .5rem; align-items: center; }
+.oc-sugg { margin-left: .4rem; font-size: .72rem; }

@@ -82,3 +82,8 @@ def test_abim_pdf_detected_and_routed():
     assert D.detect("err.pdf", pdf)[0] == D.ABIM
     got = D.sort_uploads([Upload("err.pdf", pdf)])
     assert [u.name for u in got[D.ABIM]] == ["err.pdf"] and not got["skipped"]
+
+
+def test_roster_with_title_rows_is_detected():
+    data = b'ACP IM-ITE roster export,,,\n,,,\nCandidate ID,Name,PGY,Total Test Percent Correct\n1001,"Test, A",1,60\n'
+    assert D.detect("2026 roster.csv", data)[0] == D.ROSTER

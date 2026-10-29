@@ -28,7 +28,9 @@ def test_demo_end_to_end(loaded):
     assert cw.tier.value_counts().to_dict() == {"Exact": 28, "Probable": 1, "Unmatched": 1}  # nickname; no account
     assert len(names.unmatched_mksap(cw, mk.people)) == 2  # the two graduates
     w = S.build_wide(r, mk, cw)
-    assert len(w) == 30 and w.mk_answered.notna().sum() == 29
+    assert len(w) == 30 and w.mk_answered.notna().sum() == 28  # the Probable match waits for review
+    w = S.build_wide(r, mk, names.confirm_tier(cw, "Probable"))
+    assert w.mk_answered.notna().sum() == 29  # counted once confirmed
 
 
 def test_one_bad_file_does_not_stop_the_rest(demo_files):

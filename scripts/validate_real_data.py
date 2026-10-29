@@ -136,6 +136,9 @@ mk_raw = mksap.load_mksap(one("*MKSAP*.csv", "mksap"))
 people, mk_sections = mksap.per_person(mk_raw), mksap.by_section(mk_raw)
 cur = long[long.Exam_Year == cur_year]
 cw = names.match_mksap(cur, people)
+# The reference analysis used every automatic match; in the app Probable matches count once a PD confirms them
+# ("Confirm all suggestions"), so confirm them here to compare like with like.
+cw = names.confirm_tier(cw, "Probable")
 print("  tiers:", cw.tier.value_counts().to_dict(), "| MKSAP people:", len(people))
 check("ITE residents matched", int(cw.mksap_key.notna().sum()), T["n_matched"])
 check("MKSAP-only people", len(names.unmatched_mksap(cw, people)), T["n_mksap_only"])
@@ -205,7 +208,7 @@ if "overview" in T and (DATA / T["overview"]["file"]).exists():
     check("overview: detected kind", ov.kind, ov_t["kind"])
     check("overview: bank", ov.bank, ov_t["bank"])
     check("overview: people", len(ov.people), ov_t["n_people"])
-    ov_cw = names.match_mksap(cur, ov.people)
+    ov_cw = names.confirm_tier(names.match_mksap(cur, ov.people), "Probable")  # as above
     check("overview: residents matched", int(ov_cw.mksap_key.notna().sum()), ov_t["n_matched"])
     ov_md = stats.mksap_models(history.attach_mksap(history.wide(long, cur_year), ov_cw, ov.people))
     check("overview: n", ov_md["n"], ov_t["n_model"])

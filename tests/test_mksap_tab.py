@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from ite_core import demo, mksap, stats
+from ite_core import demo, mksap, names, stats
 from ite_core import session as S
 
 
@@ -10,7 +10,7 @@ def data():
     d = demo.make_demo()
     r = S.load_rosters([S.Upload(n, b) for n, b in d["rosters"]])
     mk = S.load_mksap(S.Upload(*d["mksap"]))
-    cw = S.match(r, mk)
+    cw = names.confirm_tier(S.match(r, mk), "Probable")  # a reviewed dataset: suggestions confirmed
     return S.build_wide(r, mk, cw), mk
 
 
@@ -93,7 +93,7 @@ def test_overview_export_detected_and_analysable():
     assert det.kind == "detail" and det.sections is not None
     cw = S.match(r, mk)
     assert (cw.mksap_key.notna()).sum() == (S.match(r, det).mksap_key.notna()).sum()
-    w = S.build_wide(r, mk, cw)
+    w = S.build_wide(r, mk, names.confirm_tier(cw, "Probable"))
     assert stats.mksap_models(w)["ok"]
     assert mksap.progress_by_pgy(w).n.sum() == 29
 

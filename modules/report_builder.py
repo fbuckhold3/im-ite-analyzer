@@ -20,10 +20,10 @@ from htmltools import HTML, Tag, tags
 
 from ite_core import board, history, mksap, pdf_reports, stats
 from ite_core.history import SMALL_N
-from ite_core.nomogram import DEFAULT_CUTOFFS
+from ite_core.nomogram import DEFAULT_CUTOFFS, prob_label
 
 from . import plots
-from .common import DOI, ORCID, REPO
+from .common import DOI, ESTIMATE_CAVEAT, ORCID, REPO
 from .items_tab import gap_legend, items_table, rank_legend
 
 CSS = """
@@ -313,7 +313,7 @@ def _class_rates(bt, deid) -> Tag | None:
             tiles.append(_kpi("—", f"Class of {r.grad_class}", f"Now PGY-{r.PGY} · fewer than 5 residents"))
             continue
         context = f"Now PGY-{r.PGY} · n = {r.n}" + ("" if deid else f" · likely {r.lo}–{r.hi} pass")
-        tiles.append(_kpi(f"{math.floor(100 * r.projected + 1e-9)}%", f"Class of {r.grad_class}", context))
+        tiles.append(_kpi(prob_label(r.projected), f"Class of {r.grad_class}", context))
     if not tiles:
         return None
     return tags.div(
@@ -410,7 +410,7 @@ def _board(ds, cutoffs, deid) -> Tag | None:
                     f"PGY-{int(r.PGY)}",
                     _num(r[f"Pct_{cy}"], 0, "%"),
                     _num(r[f"Ile_{cy}"]),
-                    f"{math.floor(100 * r[f'Prob_{cy}'])}%",
+                    prob_label(r[f"Prob_{cy}"]),
                     _badge(r.Tier, r.Tier),
                     r.Tier_change.lower(),
                     _num(r.Gap_Low, 1),
@@ -641,7 +641,7 @@ def _outcomes(outcomes, deid) -> Tag | None:
     t, summary = outcomes["table"], outcomes["summary"]
     last = summary.iloc[-1]
     take = (
-        f"{int(last.exam_year)}: predicted {math.floor(100 * last.predicted + 1e-9)}% from the ITE, "
+        f"{int(last.exam_year)}: predicted {prob_label(last.predicted)} from the ITE, "
         f"{round(100 * last.observed_linked)}% actually passed ({int(last.linked)} graduates linked)."
         if last.linked
         else None
@@ -680,7 +680,9 @@ def _methods(deid) -> Tag:
             "Between the USMLE Step Examinations, American College of Physicians In-Training Examination, and ABIM "
             "Internal Medicine Certification Examination. Acad Med. 2020;95(9):1388–1395. ",
             tags.a("doi:10.1097/ACM.0000000000003382", href=DOI),
-            ". Educational use only — not for promotion, remediation or employment decisions.",
+            ". ",
+            ESTIMATE_CAVEAT,
+            " Educational use only — not for promotion, remediation or employment decisions.",
         ),
         tags.p(
             "Full methods: ",

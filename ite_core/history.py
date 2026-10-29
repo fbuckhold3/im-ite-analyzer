@@ -99,8 +99,15 @@ def wide(long: pd.DataFrame, current_year: int | None = None) -> pd.DataFrame:
 
 
 def attach_mksap(w: pd.DataFrame, crosswalk: pd.DataFrame, people: pd.DataFrame) -> pd.DataFrame:
-    """Add mk_* columns via the confirmed crosswalk (acp_id -> mksap_key). Unlinked -> NaN."""
-    link = crosswalk.dropna(subset=["mksap_key"])[["acp_id", "mksap_key"]]
+    """Add mk_* columns via the crosswalk (acp_id -> mksap_key). Unlinked -> NaN.
+
+    Only Exact matches and links a person confirmed or chose count: a Probable / Manual-unconfirmed suggestion
+    waits for review, so similar names can't slip a wrong account into the analyses.
+    """
+    ok = crosswalk.tier.eq("Exact")
+    if "confirmed_by_user" in crosswalk:
+        ok |= crosswalk.confirmed_by_user.fillna(False).astype(bool)
+    link = crosswalk[ok].dropna(subset=["mksap_key"])[["acp_id", "mksap_key"]]
     cols = ["mk_key", "mk_answered", "mk_correct", "mk_bank", "mk_pct_correct", "mk_pct_bank"]
     mk = link.merge(people[cols], left_on="mksap_key", right_on="mk_key").drop(columns=["mksap_key"])
     out = w.merge(mk.rename(columns={"acp_id": "ID"}), on="ID", how="left")
