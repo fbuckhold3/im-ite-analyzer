@@ -1,0 +1,22 @@
+Package: iteviz
+Title: ABIM Pass Estimates from ITE Scores, and Their Display
+Version: 0.1.0
+Authors@R:
+    person("Fred", "Buckhold", email = "fbuckhold3@users.noreply.github.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-9049-3870"))
+Description: R mirror of the im-ite-analyzer nomogram (ite_core/nomogram.py):
+    the estimated chance of passing the ABIM certification exam from IM-ITE
+    percent correct and PGY level, approximating the McDonald et al. (2020)
+    curves <doi:10.1097/ACM.0000000000003382>. Risk tiers, ~5% display labels,
+    trajectories and curves match the Python spec exactly (checked against a
+    shared parity fixture). Also provides htmltools/plotly display helpers:
+    tier badge, estimate card, per-year chips and the nomogram chart.
+License: Apache License (>= 2)
+URL: https://github.com/fbuckhold3/im-ite-analyzer
+Encoding: UTF-8
+Depends: R (>= 4.1)
+Imports: grDevices, htmltools, plotly, tibble, utils
+Suggests: jsonlite, roundsui, testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+Config/roxygen2/version: 8.0.0

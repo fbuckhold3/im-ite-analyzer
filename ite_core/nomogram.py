@@ -17,6 +17,10 @@ import pandas as pd
 
 NOMOGRAM = {1: (-7.0641, 0.1811), 2: (-8.1445, 0.1733), 3: (-11.9491, 0.2173)}
 
+# This module is the spec for the R port in r/iteviz. Bump this whenever results change on purpose (coefficients,
+# cutoffs, tier names, prob_label), then run scripts/make_parity_fixture.py and update the R package to match.
+SPEC_VERSION = "1"
+
 # Default: High < 50%, Intermediate 50-90%, Low >= 90%.
 # Cutoffs are a program choice — expose them as a setting, not a constant.
 DEFAULT_CUTOFFS = (0.50, 0.90)

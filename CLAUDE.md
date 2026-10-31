@@ -18,6 +18,9 @@ Private, machine-local notes (if present): `CLAUDE.local.md`.
   `history`, `stats`, `pdf_reports`, `individual`, `detect` (what an uploaded file is; headers / first PDF pages only), `abim` (ABIM
   result PDFs → outcomes linked to graduates' ITE by name).
 - `tests/` pytest on synthetic fixtures only (`tests/conftest.py`). Run: `.venv/bin/python -m pytest`.
+- `r/iteviz/` R mirror of `nomogram.py` (+ htmltools/plotly display helpers) for R apps. `nomogram.py` is the spec:
+  change it → bump `SPEC_VERSION` → `scripts/make_parity_fixture.py` → update `r/iteviz` until
+  `devtools::test("r/iteviz")` passes. pytest + testthat both check `tests/fixtures/nomogram_parity.json`.
 - `scripts/validate_real_data.py <dir>` checks ite_core against a private real-data analysis (aggregates only).
 - `scripts/check_no_data.py` blocks data files / emails from commits (pre-commit + CI).
 - `app.py` page_navbar + footer; `modules/` one Shiny module per tab (`home` entry cards, `calculator`, `resident`, `upload_align`) plus `program_nav.py` (section boxes over a hidden navset `program_nav`), `program_tabs.py`

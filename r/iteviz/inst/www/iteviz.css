@@ -1,0 +1,54 @@
+/* iteviz: tier badge, estimate card, year chips. roundsui CSS variables with roundsui's values as fallback.
+   Text stays in ink on the tier tint (status colours as small text on their tints are below WCAG AA);
+   the tier colour carries the border and dot, always paired with the tier name. */
+
+.iteviz-tier, .iteviz-chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.1rem 0.55rem; border-radius: 999px; border: 1px solid transparent;
+  font-size: 0.85rem; font-weight: 600; line-height: 1.4; white-space: nowrap;
+  color: var(--roundsui-ink, #13161F);
+}
+.iteviz-tier::before, .iteviz-chip::before {
+  content: ""; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: currentColor; flex: none;
+}
+.iteviz-tier--high, .iteviz-chip--high {
+  background: var(--roundsui-danger-tint, #FBEAE8); border-color: var(--roundsui-danger, #D33A2C);
+}
+.iteviz-tier--intermediate, .iteviz-chip--intermediate {
+  background: var(--roundsui-warning-tint, #FBF0DF); border-color: var(--roundsui-warning, #C2760A);
+}
+.iteviz-tier--low, .iteviz-chip--low {
+  background: var(--roundsui-success-tint, #E7F6EC); border-color: var(--roundsui-success, #16A34A);
+}
+.iteviz-tier--high::before, .iteviz-chip--high::before { background: var(--roundsui-danger, #D33A2C); }
+.iteviz-tier--intermediate::before, .iteviz-chip--intermediate::before { background: var(--roundsui-warning, #C2760A); }
+.iteviz-tier--low::before, .iteviz-chip--low::before { background: var(--roundsui-success, #16A34A); }
+.iteviz-tier--none { color: var(--roundsui-ink-faint, #8991A0); padding-left: 0; }
+.iteviz-tier--none::before { display: none; }
+
+.iteviz-card {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem;
+  padding: 1rem; border-radius: 8px;
+  background: var(--roundsui-surface, #FFFFFF);
+  border: 1px solid var(--roundsui-border, #E2E5EC);
+  border-left: 5px solid var(--roundsui-border-strong, #CBD0DB);
+  color: var(--roundsui-ink, #13161F);
+}
+.iteviz-card--high { border-left-color: var(--roundsui-danger, #D33A2C); }
+.iteviz-card--intermediate { border-left-color: var(--roundsui-warning, #C2760A); }
+.iteviz-card--low { border-left-color: var(--roundsui-success, #16A34A); }
+.iteviz-card__estimate { min-width: 9rem; }
+.iteviz-card__number { font-size: 2.6rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.iteviz-card__hint { color: var(--roundsui-ink-muted, #5B6472); font-size: 0.85rem; max-width: 14rem; }
+.iteviz-card__detail { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; min-width: 12rem; }
+.iteviz-card__action { margin-left: 0.5rem; color: var(--roundsui-ink-muted, #5B6472); font-size: 0.9rem; }
+.iteviz-card__stat { color: var(--roundsui-ink-muted, #5B6472); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+
+.iteviz-card--compact { padding: 0.6rem 0.8rem; gap: 0.5rem 1rem; }
+.iteviz-card--compact .iteviz-card__number { font-size: 1.6rem; }
+.iteviz-card--compact .iteviz-card__hint { font-size: 0.75rem; }
+
+.iteviz-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0; }
+.iteviz-chip { font-weight: 500; font-variant-numeric: tabular-nums; }
+
+.iteviz-citation { color: var(--roundsui-ink-faint, #8991A0); font-size: 0.78rem; margin-top: 0.4rem; }
