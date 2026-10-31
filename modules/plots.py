@@ -94,14 +94,16 @@ def set_bands(fig, cutoffs) -> None:
         dict(type="rect", xref="paper", x0=0, x1=1, y0=a, y1=b, fillcolor=BAND[t], line_width=0, layer="below")
         for t, a, b in spans
     ]
+    # Curves start low on the left and are near 100% on the right, so the High and
+    # Intermediate labels sit at the right edge and the Low label at the left (same as r/iteviz).
     fig.layout.annotations = [
         dict(
             xref="paper",
-            x=0.01,
+            x=0.01 if t == "Low" else 0.99,
             y=(a + min(b, 1)) / 2,
             text=f"{t} risk",
             showarrow=False,
-            xanchor="left",
+            xanchor="left" if t == "Low" else "right",
             font=dict(size=11, color="#555"),
         )
         for t, a, b in spans

@@ -77,7 +77,8 @@ def nomogram_png(points, cutoffs=nomogram.DEFAULT_CUTOFFS, width_in: float = 6.0
     hi, lo = cutoffs
     for tier, a, b in (("High", 0, hi), ("Intermediate", hi, lo), ("Low", lo, 1.02)):
         ax.axhspan(a, b, color=BAND[tier], zorder=0)
-        ax.text(94, (a + min(b, 1)) / 2, f"{tier} risk", fontsize=7, color=SOFT, va="center", ha="right")
+        x, ha = (31, "left") if tier == "Low" else (94, "right")  # keep clear of the curves, as in plots.set_bands
+        ax.text(x, (a + min(b, 1)) / 2, f"{tier} risk", fontsize=7, color=SOFT, va="center", ha=ha)
     c = nomogram.curves(step=0.5, lo=30, hi=95)
     for p in (1, 2, 3):
         s = c[c.PGY == p]
@@ -105,7 +106,7 @@ def nomogram_png(points, cutoffs=nomogram.DEFAULT_CUTOFFS, width_in: float = 6.0
     ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0f}%")
     ax.set_xlabel("ITE percent correct", fontsize=8, color=SOFT)
     ax.set_ylabel("Estimated probability of passing ABIM", fontsize=8, color=SOFT)
-    ax.legend(loc="upper left", fontsize=7.5, frameon=False)
+    ax.legend(loc="lower right", fontsize=7.5, frameon=False, ncol=3)  # as in plots.nomogram_figure
     _style(ax)
     fig.tight_layout()
     return _png(fig)

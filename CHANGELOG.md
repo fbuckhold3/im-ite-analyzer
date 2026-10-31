@@ -45,6 +45,8 @@ versions follow [Semantic Versioning](https://semver.org/).
   points). `modules/report_builder.py`.
 
 ### Changed
+- **Nomogram band labels no longer sit on the curves**: High and Intermediate are labelled at the right edge, Low
+  at the left, in the interactive chart and the resident PDF (whose legend moves to the lower right).
 - **Pass estimates are shown rounded down to the nearest 5%** ("~85%", "≥95%", "<5%") with the source cohort
   (ITE 2014–15, ABIM 2015–18) stated wherever estimates appear; METHODS explains why the paper's published
   coefficients (a multivariable model without an intercept) can't replace the reconstructed ITE-only curves.
