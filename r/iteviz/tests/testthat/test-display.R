@@ -39,3 +39,15 @@ test_that("nomogram plot: 3 curves, scores, 3 bands, no cloud buttons", {
 test_that("unnamed scores are rejected", {
   expect_error(trajectory(c(60, 65)), "named by PGY")
 })
+
+test_that("citation has no stray spaces around the doi link", {
+  expect_match(as.character(ite_citation()), "2020 \\(<a [^>]*>doi</a>\\);")
+})
+
+test_that("band labels: High and Intermediate on the right, Low on the left", {
+  ann <- plotly::plotly_build(ite_nomogram_plot())$x$layout$annotations
+  x <- setNames(vapply(ann, `[[`, numeric(1), "x"), vapply(ann, `[[`, character(1), "text"))
+  expect_gt(x[["High risk"]], 0.9)
+  expect_gt(x[["Intermediate risk"]], 0.9)
+  expect_lt(x[["Low risk"]], 0.1)
+})

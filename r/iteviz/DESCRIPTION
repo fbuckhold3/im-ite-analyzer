@@ -1,6 +1,6 @@
 Package: iteviz
 Title: ABIM Pass Estimates from ITE Scores, and Their Display
-Version: 0.1.0
+Version: 0.1.1
 Authors@R:
     person("Fred", "Buckhold", email = "fbuckhold3@users.noreply.github.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-9049-3870"))

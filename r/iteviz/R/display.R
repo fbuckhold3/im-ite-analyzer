@@ -72,7 +72,8 @@ ite_citation <- function() {
   .with_dep(htmltools::div(
     class = "iteviz-citation",
     "Estimates approximate McDonald et al., ", htmltools::tags$em("Acad Med"), " 2020 (",
-    htmltools::a("doi", href = "https://doi.org/10.1097/ACM.0000000000003382", target = "_blank", rel = "noopener"),
+    htmltools::a("doi", href = "https://doi.org/10.1097/ACM.0000000000003382", target = "_blank", rel = "noopener",
+                 .noWS = "outside"),
     "); 2014\u201318 cohorts, shown to the nearest 5%."
   ))
 }
@@ -173,10 +174,16 @@ ite_nomogram_plot <- function(scores = NULL, cutoffs = DEFAULT_CUTOFFS, height =
     type = "rect", xref = "paper", x0 = 0, x1 = 1, y0 = spans[[t]][1], y1 = spans[[t]][2],
     fillcolor = .rgba(cols[[TIER_TOKEN[[t]]]], 0.10), line = list(width = 0), layer = "below"
   ))
-  annotations <- lapply(names(spans), function(t) list(
-    xref = "paper", x = 0.01, y = (spans[[t]][1] + min(spans[[t]][2], 1)) / 2, text = TIER_LABEL[[t]],
-    showarrow = FALSE, xanchor = "left", font = list(size = 11, color = cols$ink_muted)
-  ))
+  # Curves start low on the left and are near 100% on the right, so the High and
+  # Intermediate labels sit at the right edge and the Low label at the left.
+  annotations <- lapply(names(spans), function(t) {
+    left <- t == "Low"
+    list(
+      xref = "paper", x = if (left) 0.01 else 0.99, xanchor = if (left) "left" else "right",
+      y = (spans[[t]][1] + min(spans[[t]][2], 1)) / 2, text = TIER_LABEL[[t]],
+      showarrow = FALSE, font = list(size = 11, color = cols$ink_muted)
+    )
+  })
 
   fig |>
     plotly::layout(
