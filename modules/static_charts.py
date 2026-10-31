@@ -87,13 +87,15 @@ def nomogram_png(points, cutoffs=nomogram.DEFAULT_CUTOFFS, width_in: float = 6.0
         if pct is None or prob is None or prob != prob:
             continue
         ax.scatter([pct], [prob], s=60, color=PGY_COLOR[min(3, max(1, int(pgy)))], edgecolor=INK, linewidth=1, zorder=4)
-    for pgy, pct in targets:  # where each later PGY curve reaches the Low-risk cutoff
+    for i, (pgy, pct) in enumerate(targets):  # where each later PGY curve reaches the Low-risk cutoff
         ax.scatter([pct], [lo], s=150, marker="*", color=PGY_COLOR[pgy], edgecolor=INK, linewidth=0.8, zorder=5)
+        last = i == len(targets) - 1  # targets sit ~5 points apart: earlier labels left of the star, as in plots
         ax.annotate(
             f"PGY-{pgy}: ~{pct:.0f}%",
             (pct, lo),
-            xytext=(6, -12),
+            xytext=(6 if last else -6, -12),
             textcoords="offset points",
+            ha="left" if last else "right",
             fontsize=8,
             color=INK,
             fontweight="bold",

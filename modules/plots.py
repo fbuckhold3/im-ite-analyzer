@@ -702,7 +702,8 @@ def add_targets(fig, targets, cutoffs=nomogram.DEFAULT_CUTOFFS):
             mode="markers+text",
             name="Next-year targets",
             text=[f"PGY-{p}: ~{pct:.0f}%" for p, pct in targets],
-            textposition="bottom right",
+            # Targets sit ~5 points apart: earlier labels go left of their star, the last one right.
+            textposition=["bottom left"] * (len(targets) - 1) + ["bottom right"],
             textfont=dict(size=12, color="#1a1a1a"),
             marker=dict(
                 size=14, symbol="star", color=[PGY_COLOR[p] for p, _ in targets], line=dict(color="#1a1a1a", width=1)

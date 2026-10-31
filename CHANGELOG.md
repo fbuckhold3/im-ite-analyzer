@@ -47,6 +47,8 @@ versions follow [Semantic Versioning](https://semver.org/).
 ### Changed
 - **Nomogram band labels no longer sit on the curves**: High and Intermediate are labelled at the right edge, Low
   at the left, in the interactive chart and the resident PDF (whose legend moves to the lower right).
+- **Next-year target labels no longer overlap** when there are two (PGY-2 and PGY-3 for an intern): the earlier
+  label sits left of its star, in the interactive chart and the resident PDF.
 - **Pass estimates are shown rounded down to the nearest 5%** ("~85%", "≥95%", "<5%") with the source cohort
   (ITE 2014–15, ABIM 2015–18) stated wherever estimates appear; METHODS explains why the paper's published
   coefficients (a multivariable model without an intercept) can't replace the reconstructed ITE-only curves.
