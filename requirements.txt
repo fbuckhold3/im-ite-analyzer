@@ -8,6 +8,6 @@ plotly==7.1.0
 pypdf==6.21.1
 reportlab==5.0.1
 scipy==1.17.1
-shiny==1.8.0
+shiny==1.9.0
 shinywidgets==0.8.2
 statsmodels==0.15.0
